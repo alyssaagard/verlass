@@ -27,6 +27,12 @@ const CANDIDATES = [
 ].filter(Boolean);
 
 export async function run({ ROOT, check, note }) {
+  // The GitHub check runs every other area; the browser scenario is run on the maintainer's own
+  // computer before a release (see MAINTAINING.md). Set VERLASS_UI=1 to run it on CI as well.
+  if (process.env.CI && process.env.VERLASS_UI !== "1") {
+    note("the browser tests are not run on CI; run npm run check on your own computer, or set VERLASS_UI=1");
+    return "";
+  }
   const chrome = CANDIDATES.find((p) => fs.existsSync(p));
   if (!chrome) {
     note("no Chrome, Edge, or Chromium found; the browser tests were skipped");
