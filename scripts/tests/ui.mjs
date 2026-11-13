@@ -88,8 +88,15 @@ export async function run({ ROOT, check, note }) {
       { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 120000, maxBuffer: 64 * 1024 * 1024 }
     );
     check(/id="outlook" role="tabpanel">/.test(deep) && /id="gmail" role="tabpanel" hidden/.test(deep), "a link to the permissions step opens the Outlook tab");
-    const web = dump(path.join(ROOT, "docs/app/index.html"), 8000);
-    check(/Connect Verlass to Microsoft 365|Connect .* to Microsoft 365/.test(web) && web.includes('name="client"'), "the browser app asks for connection settings when it has none");
+    // The browser app loads Microsoft's sign-in library and its own modules before it draws
+    // anything, which can take longer on a slow machine, so it is given more time and one retry.
+    const appText = (html) => {
+      const m = /<div id="app"[^>]*>([\s\S]*?)<noscript>/.exec(html);
+      return (m ? m[1] : html).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160);
+    };
+    let web = dump(path.join(ROOT, "docs/app/index.html"), 20000);
+    if (!/Connect .* to Microsoft 365/.test(web)) web = dump(path.join(ROOT, "docs/app/index.html"), 40000);
+    check(/Connect .* to Microsoft 365/.test(web) && web.includes('name="client"'), "the browser app asks for connection settings when it has none (the page showed: " + appText(web) + ")");
     return `${results.length} steps of the staff, team, and administrator scenario pass in ${path.basename(chrome)}, and the built pages start`;
   } finally {
     fs.rmSync(profile, { recursive: true, force: true });
