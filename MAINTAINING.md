@@ -7,7 +7,7 @@ Notes for publishing Verlass and keeping it running. Everything here is done by 
 1. Make changes in `docs/app/`, `gmail/`, or `scripts/`.
 2. If it is a release, raise `VERSION` and set `RELEASE_DATE` in `scripts/site.config.mjs`, raise `version` in `package.json` to match, and add a section to `CHANGELOG.md`. The build stamps the download packages with `RELEASE_DATE`, so set it before building.
 3. Run `npm run build` and `npm run check`. Both must pass. Each area has its own tests in `scripts/tests/` (core, gmail, web, pages, colors, packages, ui), and `npm run check -- --only=gmail` runs just one while you work on it. The check compares every generated file with a fresh build, so a changed source without a rebuild fails.
-4. The `ui` tests drive the screens in headless Chrome. They need Google Chrome, Microsoft Edge, or Chromium (set `CHROME_PATH` to choose one). When no browser can start, they are skipped with a note. Run them on your own computer before a release; the GitHub check does not have to.
+4. The `ui` tests drive the screens in headless Chrome. They need Google Chrome, Microsoft Edge, or Chromium (set `CHROME_PATH` to choose one). When no browser can start, they are skipped with a note; when the browser starts but the scenario hangs or fails, that is a failure. The GitHub check skips them on purpose (it says so in its log), so run them on your own computer before every release. Set `VERLASS_UI=1` to run them on CI too.
 5. Commit and push to `main`. GitHub Pages publishes `docs/` within a minute or two.
 
 Outlook users get the new version automatically, because Outlook loads Verlass from the website. Gmail users update by replacing the script files (the install page says how), so mention Gmail changes in the changelog.

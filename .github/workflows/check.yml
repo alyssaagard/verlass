@@ -11,6 +11,8 @@ jobs:
   check:
     runs-on: ubuntu-latest
     strategy:
+      # Report every Node version, so one failure does not hide the other's result.
+      fail-fast: false
       matrix:
         # The lowest supported version and the current long-term support version.
         node: [22, 24]
