@@ -77,10 +77,28 @@ Outlook (needs a Microsoft 365 tenant where you are an administrator; the Micros
 5. On a client old enough to lack nested app authentication, the sign-in dialog opens and returns.
 6. Email notices arrive, sent from the acting person's mailbox. With the manifest option "Do not send email", none are sent.
 7. Upload the manifest in the Microsoft 365 admin center (Integrated apps) and note any validation message.
-8. Run `npx office-addin-manifest validate docs/outlook/manifest.xml` once the site is live. It asks Microsoft's own service to check the manifest. This has not been run yet.
+8. Run `npx office-addin-manifest validate docs/outlook/manifest.xml` after every change to the manifest. It asks Microsoft's own service to check it. It was last run on 2026-11-13 on the live manifest (version 2.0.0), which it reported valid for Outlook on Windows, Mac, the web, iOS, and Android. Inside a sandbox it may need `NODE_USE_ENV_PROXY=1` to reach Microsoft.
 9. After setup, check that the step "Remove the setup permission" matches what the Microsoft Entra admin center shows, and correct the install page if the buttons differ.
 10. On Outlook for iOS, Android, and Mac, check that the panel opens with its connection settings (they are in the address inside the manifest).
 11. In the browser app, leave a tab open for more than a day and check that "Sign in again" appears and works.
+
+## Search engines and link previews
+
+The title, description, and link preview of every public page live in `scripts/seo.config.mjs`, together with the site name, the sharing image and its alt text, and the theme colors. `npm run build` writes them into each public page between the `seo:start` and `seo:end` comments in its head, and writes `docs/sitemap.xml`, `docs/robots.txt`, and `docs/site.webmanifest`. Edit the settings file, never the built pages.
+
+- Keep each title under about 60 characters and each description between 70 and 160 characters, written as a plain sentence that says what the page is for. There is no keywords tag, because search engines ignore it.
+- A new public page needs an entry in `SEO_PAGES`. Any other HTML page (the browser app, the Outlook task pane, the sign-in pages, the not found page) carries `<meta name="robots" content="noindex">`; pages built with `layout()` get it by passing `noindex: true`. The build refuses a page that is neither.
+- The download packages and the Outlook manifest are not web pages, so they cannot carry a noindex tag. They are not in the sitemap, and nothing links to them from outside the install page.
+- The seo test (`npm run check -- --only=seo`) checks the lengths, that each page has one title, description, and canonical address, that the tags match a fresh build, that every icon and the sharing image exist at the sizes they claim, that the structured data is valid, that the sitemap lists exactly the public pages, and that every other page says noindex.
+
+Search engines find the site on their own in time, but asking them is faster. These steps need your own Google and Microsoft accounts:
+
+1. In [Google Search Console](https://search.google.com/search-console), add a property. The **Domain** kind (`verlass.alyssaagard.dev`) asks you to add a TXT record at Namecheap: Domain List, Manage, Advanced DNS, Add new record, type TXT Record, host `verlass`, and the value Google shows. The **URL prefix** kind (`https://verlass.alyssaagard.dev/`) can instead be verified with an HTML file that Google gives you; send me the file name and its one line of text, and I can add it to `docs/` and push it.
+2. Under **Sitemaps**, submit `https://verlass.alyssaagard.dev/sitemap.xml`.
+3. Under **URL inspection**, enter `https://verlass.alyssaagard.dev/` and then `https://verlass.alyssaagard.dev/demo/`, and choose **Request indexing** for each.
+4. Optionally, in [Bing Webmaster Tools](https://www.bing.com/webmasters), choose to import the site from Google Search Console.
+
+Google shows the favicon in results only after it crawls the home page again, which can take from a few days to a few weeks. After a change of address, update `SITE_URL`, rebuild, and submit the new sitemap.
 
 ## Microsoft sign-in library
 

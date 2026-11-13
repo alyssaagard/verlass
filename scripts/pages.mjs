@@ -7,11 +7,155 @@ import { NAME, SLUG, TAGLINE, DESCRIPTION, SITE_URL, VERSION, PROVIDER, REPO_URL
 import { GENERAL_FIELDS, TEMPLATE_KEYS, TEMPLATE_INFO, PLACEHOLDERS, PRESETS } from "../docs/app/core/settings.js";
 import { LISTS } from "../docs/app/core/lists.js";
 import { GMAIL_SCOPES } from "./gmail-manifests.mjs";
+import { SITE_NAME, SOCIAL_IMAGE, SEO_PAGES, THEME_COLORS } from "./seo.config.mjs";
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 /** Sets the theme before the page paints, so there is no flash of the wrong colors. */
 const THEME_BOOT = `<script>(function(){var d=document.documentElement;try{var c=localStorage.getItem("helpdesk.theme");if(c!=="light"&&c!=="system")c="dark";var l=c==="light"||(c==="system"&&window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches);d.setAttribute("data-theme",l?"light":"dark");d.setAttribute("data-theme-choice",c)}catch(e){d.setAttribute("data-theme","dark")}})();</script>`;
+
+// ---------------------------------------------------------------------------
+// Search engines and link previews (the text lives in scripts/seo.config.mjs)
+// ---------------------------------------------------------------------------
+
+export const SEO_START = "<!-- seo:start (written by npm run build from scripts/seo.config.mjs; edit that file) -->";
+export const SEO_END = "<!-- seo:end -->";
+
+/** The search entry for a page address, or null when the page is not public. */
+export const seoPage = (pagePath) => SEO_PAGES.find((p) => p.path === (pagePath || "")) || null;
+
+/** Structured data (schema.org) for a public page, as an object, or null. */
+export function seoSchema(page, site = SITE_URL) {
+  const author = { "@type": "Person", "@id": `${site}/#author`, name: PROVIDER, url: "https://alyssaagard.dev" };
+  const free = { "@type": "Offer", price: "0", priceCurrency: "USD" };
+  if (page.schema === "site") {
+    return {
+      "@context": "https://schema.org",
+      "@graph": [
+        { "@type": "WebSite", "@id": `${site}/#website`, url: `${site}/`, name: SITE_NAME, description: page.description, inLanguage: "en", publisher: { "@id": `${site}/#author` } },
+        author,
+        {
+          "@type": "SoftwareApplication",
+          "@id": `${site}/#software`,
+          name: SITE_NAME,
+          description: page.description,
+          url: `${site}/`,
+          image: `${site}/assets/icons/icon-512.png`,
+          screenshot: `${site}/${SOCIAL_IMAGE.path}`,
+          applicationCategory: "BusinessApplication",
+          applicationSubCategory: "Help desk and ticketing",
+          operatingSystem: "Gmail (Google Workspace add-on); Microsoft Outlook on the web, Windows, Mac, iOS, and Android (Outlook add-in)",
+          softwareVersion: VERSION,
+          offers: free,
+          isAccessibleForFree: true,
+          license: "https://opensource.org/licenses/MIT",
+          author: { "@id": `${site}/#author` },
+          sameAs: [REPO_URL],
+        },
+      ],
+    };
+  }
+  if (page.schema === "demo") {
+    return {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      name: `${SITE_NAME} live demo`,
+      description: page.description,
+      url: `${site}/${page.path}`,
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Any",
+      browserRequirements: "Requires JavaScript",
+      offers: free,
+      isAccessibleForFree: true,
+      isPartOf: { "@id": `${site}/#website` },
+      author: { "@type": "Person", name: PROVIDER },
+    };
+  }
+  return null;
+}
+
+/** Favicons, the web manifest, and the theme colors, with addresses relative to the page. */
+function iconTags(up) {
+  return [
+    `<meta name="theme-color" content="${THEME_COLORS.dark}" media="(prefers-color-scheme: dark)">`,
+    `<meta name="theme-color" content="${THEME_COLORS.light}" media="(prefers-color-scheme: light)">`,
+    `<meta name="theme-color" content="${THEME_COLORS.dark}">`,
+    `<link rel="icon" href="${up}favicon.ico" sizes="any">`,
+    `<link rel="icon" href="${up}favicon.svg" type="image/svg+xml">`,
+    `<link rel="icon" href="${up}assets/icons/icon-96.png" type="image/png" sizes="96x96">`,
+    `<link rel="icon" href="${up}assets/icons/icon-192.png" type="image/png" sizes="192x192">`,
+    `<link rel="apple-touch-icon" href="${up}apple-touch-icon.png">`,
+    `<link rel="manifest" href="${up}site.webmanifest">`,
+  ];
+}
+
+/** The tags between the seo comments in a public page's head. */
+export function seoBlock(page, site = SITE_URL) {
+  const up = "../".repeat(page.path.split("/").filter(Boolean).length);
+  const url = `${site}/${page.path}`;
+  const schema = seoSchema(page, site);
+  const lines = [
+    SEO_START,
+    `<title>${esc(page.title)}</title>`,
+    `<meta name="description" content="${esc(page.description)}">`,
+    `<meta name="author" content="${esc(PROVIDER)}">`,
+    `<meta name="robots" content="index, follow, max-image-preview:large">`,
+    `<link rel="canonical" href="${url}">`,
+    `<meta property="og:type" content="website">`,
+    `<meta property="og:site_name" content="${esc(SITE_NAME)}">`,
+    `<meta property="og:title" content="${esc(page.title)}">`,
+    `<meta property="og:description" content="${esc(page.description)}">`,
+    `<meta property="og:url" content="${url}">`,
+    `<meta property="og:image" content="${site}/${SOCIAL_IMAGE.path}">`,
+    `<meta property="og:image:width" content="${SOCIAL_IMAGE.width}">`,
+    `<meta property="og:image:height" content="${SOCIAL_IMAGE.height}">`,
+    `<meta property="og:image:alt" content="${esc(SOCIAL_IMAGE.alt)}">`,
+    `<meta name="twitter:card" content="summary_large_image">`,
+    `<meta name="twitter:title" content="${esc(page.title)}">`,
+    `<meta name="twitter:description" content="${esc(page.description)}">`,
+    `<meta name="twitter:image" content="${site}/${SOCIAL_IMAGE.path}">`,
+    `<meta name="twitter:image:alt" content="${esc(SOCIAL_IMAGE.alt)}">`,
+    ...iconTags(up),
+  ];
+  if (schema) lines.push(`<script type="application/ld+json">${JSON.stringify(schema).replace(/</g, "\\u003c")}</script>`);
+  lines.push(SEO_END);
+  return lines.join("\n  ");
+}
+
+/** The head of a page that should not appear in search results on its own. */
+function hiddenHead(title, up) {
+  return [`<title>${esc(title)}</title>`, `<meta name="robots" content="noindex">`, `<meta name="author" content="${esc(PROVIDER)}">`, ...iconTags(up)].join("\n  ");
+}
+
+export function sitemapXml(site = SITE_URL) {
+  const urls = SEO_PAGES.map((p) => `  <url>\n    <loc>${site}/${p.path}</loc>\n    <lastmod>${RELEASE_DATE}</lastmod>\n    <priority>${p.priority}</priority>\n  </url>`).join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+}
+
+export function robotsTxt(site = SITE_URL) {
+  return `# ${SITE_NAME}: every public page may be read and indexed.\n# Pages that should not appear in results on their own carry a noindex tag.\nUser-agent: *\nAllow: /\n\nSitemap: ${site}/sitemap.xml\n`;
+}
+
+export function webManifest() {
+  const icon = (size) => ({ src: `assets/icons/icon-${size}.png`, sizes: `${size}x${size}`, type: "image/png", purpose: "any" });
+  return (
+    JSON.stringify(
+      {
+        name: `${SITE_NAME}: a free IT help desk for Gmail and Outlook`,
+        short_name: SITE_NAME,
+        description: SEO_PAGES[0].description,
+        start_url: "./",
+        scope: "./",
+        display: "browser",
+        background_color: THEME_COLORS.dark,
+        theme_color: THEME_COLORS.dark,
+        icons: [icon(96), icon(192), icon(512)],
+      },
+      null,
+      2
+    ) + "\n"
+  );
+}
 
 /**
  * Wraps a page body in the shared shell.
@@ -26,26 +170,17 @@ export function layout(page) {
     ["install/", "Install"],
     ["help/", "Help"],
   ];
-  const title = page.title ? `${page.title} | ${NAME}` : `${NAME} | ${TAGLINE}`;
+  // A public page takes its title, description, and previews from scripts/seo.config.mjs. Any
+  // other page must say noindex, so it never appears in search results on its own.
+  const entry = page.noindex ? null : seoPage(page.path);
+  if (!entry && !page.noindex) throw new Error(`The page "${page.path}" is not in scripts/seo.config.mjs; add it there, or mark it noindex.`);
+  const headTags = entry ? seoBlock(entry) : hiddenHead(page.title || NAME, root === "./" ? "" : root);
   return `<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${esc(title)}</title>
-  <meta name="description" content="${esc(page.description || DESCRIPTION)}">
-  <meta name="author" content="${esc(PROVIDER)}">
-  <meta property="og:title" content="${esc(page.title ? page.title + " | " + NAME : NAME)}">
-  <meta property="og:description" content="${esc(page.description || DESCRIPTION)}">
-  <meta property="og:image" content="${SITE_URL}/assets/brand/${SLUG}-social.png">
-  <meta property="og:url" content="${SITE_URL}/${page.path || ""}">
-  <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="theme-color" content="#141C18">
-  <link rel="canonical" href="${SITE_URL}/${page.path || ""}">
-  <link rel="icon" href="${r("favicon.ico")}" sizes="any">
-  <link rel="icon" href="${r("favicon.svg")}" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="${r("apple-touch-icon.png")}">
+  ${headTags}
   ${THEME_BOOT}
   <link rel="stylesheet" href="${r("assets/site.css")}">${page.head ? "\n  " + page.head.replace(/\{root\}/g, root) : ""}
 </head>
@@ -170,8 +305,6 @@ export function homePage() {
 export function demoPage() {
   return layout({
     path: "demo/",
-    title: "Live demo",
-    description: `Try ${NAME} in your browser with sample tickets. No sign-in, and nothing leaves your browser.`,
     current: "demo/",
     head: APP_CSS,
     scripts: DEMO_SCRIPT,
@@ -345,8 +478,6 @@ export function installPage() {
   const host = new URL(SITE_URL).host;
   return layout({
     path: "install/",
-    title: "Install",
-    description: `Install ${NAME} for Gmail or Outlook: download packages and step by step guides for one person, a team, a school, a business, or a whole organization.`,
     current: "install/",
     scripts: `<script type="module">
     import { outlookManifest } from "{root}app/outlook/manifest.js";
@@ -614,8 +745,6 @@ function settingsReference() {
 export function helpPage() {
   return layout({
     path: "help/",
-    title: "Help",
-    description: `How to use ${NAME}: sending and following requests, working the team's queues, and every setting an administrator can change.`,
     current: "help/",
     body: `    <p class="kicker" style="margin-top:44px">Help</p>
     <h1 class="page-title" style="margin-top:0">Using ${NAME}</h1>
@@ -699,8 +828,6 @@ export function helpPage() {
 export function privacyPage() {
   return layout({
     path: "privacy/",
-    title: "Privacy",
-    description: `${NAME}'s publisher receives nothing from you. Your tickets stay in your own Google or Microsoft 365 account.`,
     body: `    <h1 class="page-title">Privacy</h1>
     <p class="muted">Last updated ${RELEASE_DATE}. ${NAME} is published by ${esc(PROVIDER)}.</p>
     <div class="prose">
@@ -745,8 +872,6 @@ export function privacyPage() {
 export function termsPage() {
   return layout({
     path: "terms/",
-    title: "Terms",
-    description: `${NAME} is free, open-source software under the MIT License.`,
     body: `    <h1 class="page-title">Terms</h1>
     <p class="muted">Last updated ${RELEASE_DATE}.</p>
     <div class="prose">
@@ -773,10 +898,11 @@ export function notFoundPage() {
   // GitHub Pages serves this for any missing address, at any depth, so its links are absolute.
   return layout({
     path: "",
-    title: "Page not found",
+    noindex: true,
+    title: `Page not found | ${NAME}`,
     body: `    <h1 class="page-title">That page is not here</h1>
     <p class="lead">The address may have changed. Try the <a href="${SITE_URL}/">home page</a>, the <a href="${SITE_URL}/demo/">live demo</a>, or the <a href="${SITE_URL}/install/">install guide</a>.</p>`,
   })
     .replace(/(href|src)="\.\//g, `$1="${SITE_URL}/`)
-    .replace(/(href|src)="(assets\/|favicon|apple-touch|demo\/|install\/|help\/|privacy\/|terms\/)/g, `$1="${SITE_URL}/$2`);
+    .replace(/(href|src)="(assets\/|favicon|apple-touch|site\.webmanifest|demo\/|install\/|help\/|privacy\/|terms\/)/g, `$1="${SITE_URL}/$2`);
 }

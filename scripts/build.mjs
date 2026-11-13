@@ -7,6 +7,9 @@
  *   docs/app/index.html, outlook.html, auth.html, blank.html   the Microsoft 365 app pages
  *   docs/outlook/manifest.xml          the Outlook manifest without connection settings
  *   docs/version.json
+ *   docs/sitemap.xml, docs/robots.txt, docs/site.webmanifest   for search engines, from
+ *                                      scripts/seo.config.mjs (the head tags of each public page
+ *                                      come from the same file, through scripts/pages.mjs)
  *   docs/download/<slug>-gmail.zip          Standard install for Gmail
  *   docs/download/<slug>-gmail-private.zip  Private install for Gmail (service and add-on)
  *   docs/download/<slug>-outlook.zip        Outlook manifest and guide
@@ -95,6 +98,9 @@ export function outputs() {
     "docs/app/auth.html": pages.authPage(),
     "docs/app/blank.html": pages.blankPage(),
     "docs/outlook/manifest.xml": outlookManifest(MANIFEST_INFO, null),
+    "docs/sitemap.xml": pages.sitemapXml(),
+    "docs/robots.txt": pages.robotsTxt(),
+    "docs/site.webmanifest": pages.webManifest(),
     "docs/version.json": JSON.stringify({ name: NAME, version: VERSION, released: RELEASE_DATE, site: SITE_URL, repository: REPO_URL }, null, 2) + "\n",
     [`docs/download/${SLUG}-gmail.zip`]: gmailPackage(),
     [`docs/download/${SLUG}-gmail-private.zip`]: gmailPrivatePackage(),

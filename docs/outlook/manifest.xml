@@ -5,7 +5,7 @@
   xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
   xsi:type="MailApp">
   <Id>bb17164f-3928-4329-9458-1b70d3575dff</Id>
-  <Version>2.0.0.0</Version>
+  <Version>2.0.1.0</Version>
   <ProviderName>Alyssa I. Agard</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Verlass"/>

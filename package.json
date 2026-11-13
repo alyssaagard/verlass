@@ -1,6 +1,6 @@
 {
   "name": "verlass",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
   "description": "Verlass: a free, open-source help desk for Gmail and Outlook. Tickets, queues, assignment rules, due times, and email notices, with your data in your own Google or Microsoft 365 account.",
   "author": "Alyssa I. Agard",

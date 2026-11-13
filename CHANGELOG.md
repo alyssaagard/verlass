@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.1 (2026-11-13)
+
+- Search engines and link previews. Every public page of the website now has its own title and description written for search results, a canonical address, Open Graph and Twitter card tags with the sharing image, favicons that search results can use, a web manifest, and theme colors for the dark and light themes. The home page describes the website, its author, and the software as structured data, and the live demo describes itself as a web application.
+- The website now has a sitemap and a robots.txt file. The browser app, the Outlook task pane, the sign-in pages, and the not found page ask to be left out of search results.
+- All of this comes from one settings file, scripts/seo.config.mjs, and a new test checks it.
+- Microsoft's manifest validator was run on the live Outlook manifest and reports it valid.
+- On a phone, the install page no longer scrolls sideways, its two tabs stay on one row, and a link to a step no longer lands under the page header.
+
 ## 2.0.0 (2026-11-13)
 
 Verlass is the new name and a complete rebuild of the School IT Help Desk add-on (the `organization-it-helpdesk` repository). It is now for any organization, on Gmail and on Outlook.

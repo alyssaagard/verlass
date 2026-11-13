@@ -20,7 +20,7 @@ export const SITE_URL = "https://verlass.alyssaagard.dev";
 /** The Outlook add-in's permanent ID. Keep it the same for the life of the add-in. */
 export const ADDIN_ID = "bb17164f-3928-4329-9458-1b70d3575dff";
 
-export const VERSION = "2.0.0";
+export const VERSION = "2.0.1";
 
 /** The release date of this version, used for the timestamps inside the download packages. */
 export const RELEASE_DATE = "2026-11-13";
