@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Live demo | Verlass</title>
+  <meta name="description" content="Try Verlass in your browser with sample tickets. No sign-in, and nothing leaves your browser.">
+  <meta name="author" content="Alyssa I. Agard">
+  <meta property="og:title" content="Live demo | Verlass">
+  <meta property="og:description" content="Try Verlass in your browser with sample tickets. No sign-in, and nothing leaves your browser.">
+  <meta property="og:image" content="https://verlass.alyssaagard.dev/assets/brand/verlass-social.png">
+  <meta property="og:url" content="https://verlass.alyssaagard.dev/demo/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#141C18">
+  <link rel="canonical" href="https://verlass.alyssaagard.dev/demo/">
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <script>(function(){var d=document.documentElement;try{var c=localStorage.getItem("helpdesk.theme");if(c!=="light"&&c!=="system")c="dark";var l=c==="light"||(c==="system"&&window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches);d.setAttribute("data-theme",l?"light":"dark");d.setAttribute("data-theme-choice",c)}catch(e){d.setAttribute("data-theme","dark")}})();</script>
+  <link rel="stylesheet" href="../assets/site.css">
+  <link rel="stylesheet" href="../app/ui/app.css">
+</head>
+<body class="site">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-head">
+    <div class="wrap">
+      <a class="brand" href="../" aria-label="Verlass home"><img src="../assets/brand/verlass-mark.svg" alt="" width="32" height="32"><span>Verlass</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="../demo/" aria-current="page">Demo</a>
+        <a href="../install/">Install</a>
+        <a href="../help/">Help</a>
+        <a href="https://github.com/alyssaagard/verlass">GitHub</a>
+        <span class="theme-pick" role="group" aria-label="Theme">
+          <button type="button" data-theme="dark">Dark</button><button type="button" data-theme="light">Light</button><button type="button" data-theme="system">System</button>
+        </span>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    <div class="demo-layout">
+      <div class="demo-side">
+        <p class="kicker">Live demo</p>
+        <h1 class="page-title">Try the whole help desk</h1>
+        <p class="lead">This is the real Verlass panel with sample tickets for an invented organization. It runs entirely in this browser tab: there is no sign-in, and nothing you type is sent anywhere.</p>
+        <h2 style="margin-top:32px">Who are you?</h2>
+        <div class="persona" role="group" aria-label="Choose who you are in the demo">
+          <button type="button" data-persona="staff">Morgan, a staff member<span>Send a request, follow it, reply, and close it.</span></button>
+          <button type="button" data-persona="agent">Sam, on the help desk team<span>Work the queues, assign, reply, and keep internal notes.</span></button>
+          <button type="button" data-persona="admin">Alex, the administrator<span>Everything Sam can do, plus every setting.</span></button>
+        </div>
+        <h2 style="margin-top:32px">Things to try</h2>
+        <ul class="prose">
+          <li>As Morgan, send a new request. Then open the menu (the three dots) and choose <strong>Email outbox</strong> to read the notices a real help desk would have sent.</li>
+          <li>As Sam, open the <strong>Overdue</strong> or <strong>Unassigned</strong> queue, assign a ticket to yourself, and reply.</li>
+          <li>As Alex, open <strong>Settings</strong>. Rename a category, add a priority, write an assignment rule, or change the wording of an email and watch the preview.</li>
+          <li>Switch between Dark, Light, and System at the top of the page or in the menu.</li>
+        </ul>
+        <p class="muted small">Changes last until you close this tab. Choose <strong>Reset the demo</strong> in the menu to start again.</p>
+        <div class="btn-row"><a class="btn btn-primary" href="../install/">Install Verlass</a></div>
+      </div>
+      <div class="pane tall" aria-label="Verlass demo"><div id="demo-app"></div></div>
+    </div>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap">
+      <div>Verlass 2.0.0 by Alyssa I. Agard. Free and open source under the MIT License.</div>
+      <nav aria-label="Footer">
+        <a href="../privacy/">Privacy</a>
+        <a href="../terms/">Terms</a>
+        <a href="../help/">Help</a>
+        <a href="https://github.com/alyssaagard/verlass">Source code</a>
+      </nav>
+    </div>
+  </footer>
+  <script type="module" src="../assets/site.js"></script>
+  <script type="module">
+    import { mountApp } from "../app/ui/app.js";
+    import { makeService } from "../app/stores/service.js";
+    import { makeDemoBackend } from "../app/stores/demo.js";
+    let storage = null;
+    try { storage = window.sessionStorage; storage.getItem("x"); } catch (e) { storage = null; }
+    const backend = makeDemoBackend({ storage });
+    const app = mountApp(document.getElementById("demo-app"), {
+      service: makeService(backend),
+      host: { kind: "demo", name: "Verlass", siteUrl: "../".replace(/\/$/, "") || ".", demo: backend, embedded: true, onReset: () => draw() },
+    });
+    const buttons = Array.from(document.querySelectorAll("[data-persona]"));
+    function draw() { buttons.forEach((b) => b.setAttribute("aria-pressed", b.dataset.persona === backend.persona() ? "true" : "false")); }
+    buttons.forEach((b) => b.addEventListener("click", async () => { backend.setPersona(b.dataset.persona); draw(); await app.home(); }));
+    draw();
+    window.__demo = { app, backend };
+  </script>
+</body>
+</html>

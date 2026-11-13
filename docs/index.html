@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verlass | The help desk that lives in your inbox.</title>
+  <meta name="description" content="A free, open-source help desk for any organization. People send and follow requests from Gmail or Outlook, and the team works its queue in the same place. Your data stays in your own Google or Microsoft 365 account.">
+  <meta name="author" content="Alyssa I. Agard">
+  <meta property="og:title" content="Verlass">
+  <meta property="og:description" content="A free, open-source help desk for any organization. People send and follow requests from Gmail or Outlook, and the team works its queue in the same place. Your data stays in your own Google or Microsoft 365 account.">
+  <meta property="og:image" content="https://verlass.alyssaagard.dev/assets/brand/verlass-social.png">
+  <meta property="og:url" content="https://verlass.alyssaagard.dev/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#141C18">
+  <link rel="canonical" href="https://verlass.alyssaagard.dev/">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <script>(function(){var d=document.documentElement;try{var c=localStorage.getItem("helpdesk.theme");if(c!=="light"&&c!=="system")c="dark";var l=c==="light"||(c==="system"&&window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches);d.setAttribute("data-theme",l?"light":"dark");d.setAttribute("data-theme-choice",c)}catch(e){d.setAttribute("data-theme","dark")}})();</script>
+  <link rel="stylesheet" href="assets/site.css">
+  <link rel="stylesheet" href="./app/ui/app.css">
+</head>
+<body class="site">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-head">
+    <div class="wrap">
+      <a class="brand" href="./" aria-label="Verlass home"><img src="assets/brand/verlass-mark.svg" alt="" width="32" height="32"><span>Verlass</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="demo/">Demo</a>
+        <a href="install/">Install</a>
+        <a href="help/">Help</a>
+        <a href="https://github.com/alyssaagard/verlass">GitHub</a>
+        <span class="theme-pick" role="group" aria-label="Theme">
+          <button type="button" data-theme="dark">Dark</button><button type="button" data-theme="light">Light</button><button type="button" data-theme="system">System</button>
+        </span>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    <section class="hero">
+      <div>
+        <p class="kicker">A help desk for Gmail and Outlook</p>
+        <h1 class="display">The help desk that lives in your inbox.</h1>
+        <p class="lead">Verlass turns the side panel of your email into a help desk. People send a request and follow it without leaving their inbox. Your team sees its queue, assigns work, replies, and keeps notes in the same place. It suits an office of five, a school, a nonprofit, or a company with many sites.</p>
+        <div class="btn-row">
+          <a class="btn btn-primary" href="demo/">Try the live demo</a>
+          <a class="btn" href="install/">Install Verlass</a>
+        </div>
+        <p class="notice small"><strong>Your data stays yours.</strong> Tickets live in a Google Sheet in your own Google account, or in a list in your own Microsoft 365. Verlass has no server, no account to create, and no tracking.</p>
+      </div>
+      <div class="hero-art">
+        <div class="pane" aria-label="A live Verlass demo with sample tickets"><div id="demo-app"></div></div>
+      </div>
+    </section>
+
+    <h2>What it does</h2>
+    <div class="grid">
+      <div class="card"><h3>Requests from the inbox</h3><p>Anyone in the organization opens Verlass beside their mail, describes what they need, and gets a ticket number and email updates. They can reply, close, or reopen their own requests.</p></div>
+      <div class="card"><h3>Queues for the team</h3><p>The team works from queues for open, unassigned, assigned to me, overdue, waiting, finished, and all tickets. It can search by number, name, or words, and filter by category, priority, or person.</p></div>
+      <div class="card"><h3>Assignment rules</h3><p>Send printer problems to one person and password resets to another, by category, priority, location, or a keyword. Anything else can take turns around the team.</p></div>
+      <div class="card"><h3>Due times that respect working hours</h3><p>Each priority has a time allowed. Only your working days and hours count, with your days off skipped, and overdue tickets rise to the top.</p></div>
+      <div class="card"><h3>Replies and internal notes</h3><p>Reply to the requester, or leave a note only the team can read. Every change is written to an activity log.</p></div>
+      <div class="card"><h3>Email in your words</h3><p>There are seven notices, each with wording you can change and placeholders for the ticket's details. Switches turn them off.</p></div>
+      <div class="card"><h3>Made to be changed</h3><p>Categories, priorities, statuses, locations, the team, the word for a ticket, the number format, colors, and logo are all settings. Nobody edits code.</p></div>
+      <div class="card"><h3>Create a ticket from an email</h3><p>When someone emails the team instead, open the message and turn it into a ticket in their name.</p></div>
+    </div>
+
+    <h2>Where it runs</h2>
+    <div class="two-col">
+      <div class="card">
+        <h3>Gmail and Google Workspace</h3>
+        <p>A Google Workspace add-on. Tickets and settings are rows in one Google Sheet. The Private install keeps that Sheet closed to everyone but the help desk, and asks staff for the fewest permissions.</p>
+        <p><a href="install/#gmail">Install for Gmail</a></p>
+      </div>
+      <div class="card">
+        <h3>Outlook and Microsoft 365</h3>
+        <p>An Outlook add-in for the web, Windows, Mac, and mobile. Tickets are items in a SharePoint list in your own tenant, and each person sees only their own requests.</p>
+        <p><a href="install/#outlook">Install for Outlook</a></p>
+      </div>
+    </div>
+
+    <h2>Free for everyone</h2>
+    <p class="lead">Verlass is free and open source under the MIT License, for personal, commercial, school, and enterprise use. Read the <a href="https://github.com/alyssaagard/verlass">source code</a>, change it, and run your own copy if you like.</p>
+    <p class="notice small"><strong>Version 2.0.0 is new.</strong> It has been tested against simulated Gmail, Google Sheets, and Microsoft 365 services and in a real browser, and has not yet been run in a live Google account or a live Microsoft 365 tenant. Try it with a few people first, and please <a href="https://github.com/alyssaagard/verlass/issues">report what you find</a>.</p>
+    <p class="muted small"><em>Verlass</em> is the German word for dependability. "Auf uns ist Verlass" means "you can count on us."</p>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap">
+      <div>Verlass 2.0.0 by Alyssa I. Agard. Free and open source under the MIT License.</div>
+      <nav aria-label="Footer">
+        <a href="privacy/">Privacy</a>
+        <a href="terms/">Terms</a>
+        <a href="help/">Help</a>
+        <a href="https://github.com/alyssaagard/verlass">Source code</a>
+      </nav>
+    </div>
+  </footer>
+  <script type="module" src="assets/site.js"></script>
+  <script type="module">
+    import { mountApp } from "./app/ui/app.js";
+    import { makeService } from "./app/stores/service.js";
+    import { makeDemoBackend } from "./app/stores/demo.js";
+    let storage = null;
+    try { storage = window.sessionStorage; storage.getItem("x"); } catch (e) { storage = null; }
+    const backend = makeDemoBackend({ storage });
+    const app = mountApp(document.getElementById("demo-app"), {
+      service: makeService(backend),
+      host: { kind: "demo", name: "Verlass", siteUrl: "./".replace(/\/$/, "") || ".", demo: backend, embedded: true, onReset: () => draw() },
+    });
+    const buttons = Array.from(document.querySelectorAll("[data-persona]"));
+    function draw() { buttons.forEach((b) => b.setAttribute("aria-pressed", b.dataset.persona === backend.persona() ? "true" : "false")); }
+    buttons.forEach((b) => b.addEventListener("click", async () => { backend.setPersona(b.dataset.persona); draw(); await app.home(); }));
+    draw();
+    window.__demo = { app, backend };
+  </script>
+</body>
+</html>

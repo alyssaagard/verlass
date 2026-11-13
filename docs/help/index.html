@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Help | Verlass</title>
+  <meta name="description" content="How to use Verlass: sending and following requests, working the team's queues, and every setting an administrator can change.">
+  <meta name="author" content="Alyssa I. Agard">
+  <meta property="og:title" content="Help | Verlass">
+  <meta property="og:description" content="How to use Verlass: sending and following requests, working the team's queues, and every setting an administrator can change.">
+  <meta property="og:image" content="https://verlass.alyssaagard.dev/assets/brand/verlass-social.png">
+  <meta property="og:url" content="https://verlass.alyssaagard.dev/help/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#141C18">
+  <link rel="canonical" href="https://verlass.alyssaagard.dev/help/">
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <script>(function(){var d=document.documentElement;try{var c=localStorage.getItem("helpdesk.theme");if(c!=="light"&&c!=="system")c="dark";var l=c==="light"||(c==="system"&&window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches);d.setAttribute("data-theme",l?"light":"dark");d.setAttribute("data-theme-choice",c)}catch(e){d.setAttribute("data-theme","dark")}})();</script>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body class="site">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-head">
+    <div class="wrap">
+      <a class="brand" href="../" aria-label="Verlass home"><img src="../assets/brand/verlass-mark.svg" alt="" width="32" height="32"><span>Verlass</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="../demo/">Demo</a>
+        <a href="../install/">Install</a>
+        <a href="../help/" aria-current="page">Help</a>
+        <a href="https://github.com/alyssaagard/verlass">GitHub</a>
+        <span class="theme-pick" role="group" aria-label="Theme">
+          <button type="button" data-theme="dark">Dark</button><button type="button" data-theme="light">Light</button><button type="button" data-theme="system">System</button>
+        </span>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    <p class="kicker" style="margin-top:44px">Help</p>
+    <h1 class="page-title" style="margin-top:0">Using Verlass</h1>
+    <p class="lead">Verlass works much the same way in Gmail, in Outlook, and in the <a href="../demo/">live demo</a>, which is the quickest way to try anything described here. Where Gmail and Outlook differ, this page says so.</p>
+
+    <h2 id="requests">Sending and following a request</h2>
+    <ol class="steps">
+      <li>Open Verlass beside your mail and select <strong>New request</strong>.</li>
+      <li>Give it a short subject, choose the category that fits, and describe what happened and what you expected. If you are asked for a location, choose the closest one. Leave the priority on <strong>Standard for the category</strong> unless yours is different.</li>
+      <li>Select <strong>Send</strong>. You get a number such as <code>TKT-0042</code> and, unless your organization turned it off, a confirmation by email.</li>
+      <li>Your requests are listed on the first screen, with unfinished ones first. Open one to read replies and to answer.</li>
+      <li>If the problem goes away, select <strong>I no longer need this</strong>; anything you typed in the reply box goes along as a last message. If a finished request comes back, reply to it and it reopens.</li>
+    </ol>
+
+    <h2 id="team">Working the queues</h2>
+    <p class="prose">People on the team list see the queues: <strong>Open</strong> (everything unfinished), <strong>Unassigned</strong>, <strong>Assigned to me</strong>, <strong>Overdue</strong>, <strong>Waiting</strong>, <strong>Finished</strong>, and <strong>All</strong>. Queues are in work order: overdue first, then the highest priority, then the soonest due time, then the oldest. Waiting tickets come after the ones being worked on.</p>
+    <ul class="prose">
+      <li><strong>Reply</strong> is saved on the ticket and emailed to the requester. <strong>Internal note</strong> is seen only by the team.</li>
+      <li>Changing the <strong>status</strong> can email the requester; each status decides that for itself. A status has a kind: <em>open</em> (being worked on), <em>waiting</em> (the ticket is not counted as overdue; its due time does not move), or <em>done</em>.</li>
+      <li>When a requester replies to a waiting ticket it returns to the first open status. When they reply to a finished ticket it reopens, if your settings allow.</li>
+      <li>Changing the <strong>priority</strong> sets a new due time from when the ticket was created, unless you set a due time yourself.</li>
+      <li>To log a request for someone who phoned or emailed, start a new request and fill in <strong>Requester email</strong>. With <strong>Create from the open email</strong>, Verlass fills in the subject, the message, and the sender for you.</li>
+      <li>If two people change the same ticket at once, the second is asked to open it again, so nobody's change is silently lost.</li>
+    </ul>
+
+    <h2 id="settings">Settings</h2>
+    <p class="prose">Administrators change everything from <strong>Settings</strong>, without editing code. In Gmail the same settings are also tabs in the help desk's Google Sheet; changes made in the Sheet show up within five minutes. When a value cannot be used, for example a color that is not a color, Verlass keeps a usable value and names the setting it corrected.</p>
+    <h3>Branding</h3>
+      <div class="table-wrap"><table class="plain">
+        <thead><tr><th>Setting</th><th>Kind</th><th>Starts as</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td>Organization name</td><td>Text</td><td><span class="muted">empty</span></td><td>Shown in the header and in email.</td></tr>
+          <tr><td>Help desk name</td><td>Text</td><td><code>IT Help Desk</code></td><td>For example IT Help Desk, Service Desk, or Facilities.</td></tr>
+          <tr><td>Accent color</td><td>Color</td><td><code>#2F4F40</code></td><td>Buttons in Gmail and the header of every email. Use a hex color such as #2F4F40.</td></tr>
+          <tr><td>Logo address</td><td>Web address</td><td><span class="muted">empty</span></td><td>A public https address of a square logo image. Leave empty for none.</td></tr>
+          <tr><td>Website</td><td>Web address</td><td><span class="muted">empty</span></td><td>Added to the email footer.</td></tr>
+          <tr><td>Reply-to address</td><td>Email address</td><td><span class="muted">empty</span></td><td>Replies to help desk email go to this address.</td></tr>
+          <tr><td>Email footer</td><td>Text</td><td><span class="muted">empty</span></td><td>One line added under every email.</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Tickets</h3>
+      <div class="table-wrap"><table class="plain">
+        <thead><tr><th>Setting</th><th>Kind</th><th>Starts as</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td>Ticket number prefix</td><td>Text</td><td><code>TKT-</code></td><td>For example TKT-, IT-, or REQ-.</td></tr>
+          <tr><td>Ticket number digits</td><td>Number</td><td><code>4</code></td><td>TKT-0042 has four digits. Numbers keep growing past this width.</td></tr>
+          <tr><td>Word for a ticket</td><td>Text</td><td><code>request</code></td><td>The word people see: request, ticket, case, or issue.</td></tr>
+          <tr><td>Default priority</td><td>Text</td><td><code>Normal</code></td><td>Must match a name on the priorities list.</td></tr>
+          <tr><td>Requesters choose the priority</td><td>On or off</td><td>On</td><td>When off, new tickets get the category's priority or the default.</td></tr>
+          <tr><td>Location field</td><td>Choice</td><td><code>list</code></td><td>list: choose from the locations list. text: type anything. off: no location. Choices: <code>list</code>, <code>text</code>, <code>off</code>.</td></tr>
+          <tr><td>Location label</td><td>Text</td><td><code>Location</code></td><td>For example Location, Room, Office, Site, or Department.</td></tr>
+          <tr><td>Location is required</td><td>On or off</td><td>Off</td><td></td></tr>
+          <tr><td>Requesters can close their tickets</td><td>On or off</td><td>On</td><td></td></tr>
+          <tr><td>Requesters can reopen their tickets</td><td>On or off</td><td>On</td><td>A reply to a closed ticket reopens it.</td></tr>
+          <tr><td>Tickets per page</td><td>Number</td><td><code>15</code></td><td></td></tr>
+        </tbody>
+      </table></div>
+      <h3>Assignment</h3>
+      <div class="table-wrap"><table class="plain">
+        <thead><tr><th>Setting</th><th>Kind</th><th>Starts as</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td>When no rule matches</td><td>Choice</td><td><code>none</code></td><td>none: leave the ticket unassigned. roundRobin: take turns among the active team. Choices: <code>none</code>, <code>roundRobin</code>.</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Hours</h3>
+      <div class="table-wrap"><table class="plain">
+        <thead><tr><th>Setting</th><th>Kind</th><th>Starts as</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td>Due times count</td><td>Choice</td><td><code>business</code></td><td>business: only working hours count. calendar: every hour counts. Choices: <code>business</code>, <code>calendar</code>.</td></tr>
+          <tr><td>Working days</td><td>Text</td><td><code>1,2,3,4,5</code></td><td>Day numbers separated by commas. Sunday is 0, Monday is 1, Saturday is 6.</td></tr>
+          <tr><td>Working day starts</td><td>Time</td><td><code>08:00</code></td><td>24-hour time, such as 08:00.</td></tr>
+          <tr><td>Working day ends</td><td>Time</td><td><code>17:00</code></td><td>24-hour time, such as 17:00.</td></tr>
+          <tr><td>Days off</td><td>Text</td><td><span class="muted">empty</span></td><td>Dates as YYYY-MM-DD separated by commas.</td></tr>
+          <tr><td>Time zone</td><td>Text</td><td><span class="muted">empty</span></td><td>For example America/New_York. Leave empty to use the help desk's own time zone.</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Email</h3>
+      <div class="table-wrap"><table class="plain">
+        <thead><tr><th>Setting</th><th>Kind</th><th>Starts as</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td>Email the requester when a ticket is created</td><td>On or off</td><td>On</td><td></td></tr>
+          <tr><td>Email the team about new tickets</td><td>Choice</td><td><code>assignee</code></td><td>assignee: the person the ticket is assigned to, or everyone when it is unassigned. all: everyone on the team. none: no email. Choices: <code>assignee</code>, <code>all</code>, <code>none</code>.</td></tr>
+          <tr><td>Email a person when a ticket is assigned to them</td><td>On or off</td><td>On</td><td></td></tr>
+          <tr><td>Email the requester when the status changes</td><td>On or off</td><td>On</td><td>Each status can also turn this off for itself.</td></tr>
+          <tr><td>Email the requester when the team replies</td><td>On or off</td><td>On</td><td></td></tr>
+          <tr><td>Email the team when the requester replies</td><td>On or off</td><td>On</td><td></td></tr>
+        </tbody>
+      </table></div>
+
+    <h3 id="lists">Lists</h3>
+    <div class="table-wrap"><table class="plain">
+      <thead><tr><th>List</th><th>Columns</th><th>What it is for</th></tr></thead>
+      <tbody>
+        <tr><td>Categories</td><td>Category, Assign to, Priority, Active</td><td>What a request is about. A category can send its tickets to one person and set their priority.</td></tr>
+        <tr><td>Priorities</td><td>Priority, Shown hint, Due in hours</td><td>Listed from lowest to highest. Due in hours sets the due time; 0 means no due time.</td></tr>
+        <tr><td>Statuses</td><td>Status, Kind, Email requester</td><td>Kind is open, waiting, or done. New tickets get the first open status. The first done status is used when a requester closes a ticket.</td></tr>
+        <tr><td>Locations</td><td>Location</td><td>Places a requester can choose, such as offices, rooms, sites, or departments.</td></tr>
+        <tr><td>Team</td><td>Email, Name, Role, Active</td><td>The people who work on tickets. Role is agent or admin. Admins can change settings.</td></tr>
+        <tr><td>Assignment rules</td><td>Category, Priority, Location, Keyword, Assign to</td><td>The first rule that matches a new ticket assigns it. An empty column matches anything. Keyword looks in the subject and description.</td></tr>
+      </tbody>
+    </table></div>
+    <p class="prose">New help desks start from one of these presets: Office or business, School or college, Nonprofit or community group, Facilities and maintenance. A preset fills the categories and locations and sets the help desk's name and the location label; rename, remove, and add items freely. In Outlook and the browser app, an administrator can load another preset later.</p>
+    <p class="prose"><strong>Renaming.</strong> Tickets store the names of their status, priority, category, and location. To rename one, change its name in place and save: Verlass renames it on every ticket and rule that uses it and tells you how many tickets changed. If you remove an item instead, its tickets keep the old name, and Settings lists them under "To review". A ticket whose status is no longer on the list counts as open.</p>
+    <p class="prose"><strong>In Gmail,</strong> lists are edited as text, one item per line with a vertical bar between the columns, and choices show their short names (for example <code>business</code> for working hours only).</p>
+
+    <h3 id="assignment">How a new ticket is assigned</h3>
+    <ol class="prose">
+      <li>The first <strong>assignment rule</strong> whose category, priority, location, and keyword all match. Empty columns match anything.</li>
+      <li>Otherwise the person named on the ticket's <strong>category</strong>.</li>
+      <li>Otherwise <strong>round robin</strong> among the active team, if that is turned on.</li>
+      <li>Otherwise the ticket stays unassigned, and the whole team is told about it.</li>
+    </ol>
+    <p class="prose">People marked inactive on the team list are skipped, so marking someone inactive while they are away sends their work to the next match.</p>
+
+    <h3 id="due">Due times</h3>
+    <p class="prose">Each priority allows a number of hours. With <strong>Working hours only</strong>, the clock runs only on your working days between the start and end times, and skips your days off. With the starting hours of 08:00 to 17:00, a ticket created on Friday evening with eight hours allowed is due at 16:00 on Monday. Set a priority's hours to 0 for no due time. The help desk's time zone is recorded when it is set up; check it under Hours.</p>
+
+    <h3 id="email">Email wording</h3>
+    <div class="table-wrap"><table class="plain">
+      <thead><tr><th>Email</th><th>Sent</th></tr></thead>
+      <tbody>
+        <tr><td><code>created</code></td><td>To the requester when a ticket is created</td></tr>
+        <tr><td><code>teamNew</code></td><td>To the team when a ticket is created</td></tr>
+        <tr><td><code>assigned</code></td><td>To a team member when a ticket is assigned to them</td></tr>
+        <tr><td><code>status</code></td><td>To the requester when the status changes</td></tr>
+        <tr><td><code>resolved</code></td><td>To the requester when the ticket is resolved or closed</td></tr>
+        <tr><td><code>reply</code></td><td>To the requester when the team replies</td></tr>
+        <tr><td><code>requesterReply</code></td><td>To the team when the requester replies</td></tr>
+      </tbody>
+    </table></div>
+    <p class="prose">Subjects and bodies are plain text. The ticket's details are added under your text automatically. These placeholders are replaced with the ticket's own values:</p>
+    <p class="prose"><code>{{ticket.id}}</code> <code>{{ticket.subject}}</code> <code>{{ticket.description}}</code> <code>{{ticket.category}}</code> <code>{{ticket.priority}}</code> <code>{{ticket.location}}</code> <code>{{ticket.status}}</code> <code>{{ticket.assignedTo}}</code> <code>{{ticket.due}}</code> <code>{{ticket.created}}</code> <code>{{requester.name}}</code> <code>{{requester.email}}</code> <code>{{actor.name}}</code> <code>{{actor.email}}</code> <code>{{message}}</code> <code>{{old.status}}</code> <code>{{org.name}}</code> <code>{{desk.name}}</code> <code>{{ticket.word}}</code></p>
+
+    <h2 id="questions">Questions</h2>
+    <details class="faq"><summary>Where is my data?</summary><p>In Gmail, in one Google Sheet in the Drive of whoever set the help desk up. In Outlook, in three lists on a SharePoint site in your own Microsoft 365. Verlass has no server and its author never sees your tickets. See the <a href="../privacy/">privacy page</a>.</p></details>
+    <details class="faq"><summary>Gmail: "You do not have access to the help desk's spreadsheet"</summary><p>You are using a Standard install and the Sheet has not been shared with you. Ask your administrator to share it with you as Editor, or to move to the Private install, which needs no sharing.</p></details>
+    <details class="faq"><summary>Gmail: the add-on says it is not connected</summary><p>In a Private install the add-on project needs a script property named <code>SERVICE_URL</code> holding the service's web app address, which ends in <code>/exec</code>. The first person to open the add-on after that must be the owner or an administrator.</p></details>
+    <details class="faq"><summary>Gmail: I changed something in the Sheet and the add-on does not show it</summary><p>Settings are remembered for five minutes. Wait, or save any setting from the add-on, which refreshes them at once. Keep the tab names and the header rows as they are; Verlass finds settings by them.</p></details>
+    <details class="faq"><summary>Gmail: times look wrong</summary><p>Set the <strong>Time zone</strong> setting, for example <code>Europe/Berlin</code>. Times in the Sheet itself are stored in universal time so they sort correctly.</p></details>
+    <details class="faq"><summary>Outlook: Microsoft says "Need admin approval"</summary><p>Your administrator has not yet granted consent for the app registration. Send them the <a href="../install/#outlook">install guide</a>.</p></details>
+    <details class="faq"><summary>Outlook: the panel shows "Set up the help desk"</summary><p>The lists have not been created, or the add-in has not been given access to the site. If you are not an administrator, there is nothing for you to do; ask them to finish the install guide's steps "Create the lists" and "Set who can see what".</p></details>
+    <details class="faq"><summary>Outlook: "Your Microsoft 365 sign-in has ended"</summary><p>Select <strong>Sign in again</strong>. In a browser tab, Microsoft's sign-in lasts about a day.</p></details>
+    <details class="faq"><summary>Outlook: a team member cannot see everyone's tickets</summary><p>They need Full Control or Design on the Help Desk Tickets list (site Owners have it), and they must be on the Team list in Verlass's settings.</p></details>
+    <details class="faq"><summary>Can we use it for something other than IT?</summary><p>Yes. Rename the help desk, change the word for a ticket, and replace the categories. The Facilities preset is one example, and the same works for HR questions, purchasing, or a front office.</p></details>
+    <details class="faq"><summary>How many tickets can it hold?</summary><p>Verlass is built for small and medium organizations and has not been measured with large numbers of tickets. It reads the whole ticket list each time it draws a queue, so it slows down as the list grows. In Outlook, lists show at most 12,000 tickets. Archiving old rows or items keeps it quick.</p></details>
+    <details class="faq"><summary>How do we stop using Verlass?</summary><p>In Gmail, uninstall the add-on and delete the Apps Script project or projects; the Google Sheet stays in Drive until you delete it. In Outlook, remove the add-in in the Microsoft 365 admin center, delete the app registration, and delete the three lists or the site. Nothing is stored anywhere else.</p></details>
+    <details class="faq"><summary>Something is not working</summary><p>Please open an issue at <a href="https://github.com/alyssaagard/verlass/issues">github.com/alyssaagard/verlass/issues</a> and say whether you use Gmail or Outlook, which install, and what you saw. Do not include private ticket details.</p></details>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap">
+      <div>Verlass 2.0.0 by Alyssa I. Agard. Free and open source under the MIT License.</div>
+      <nav aria-label="Footer">
+        <a href="../privacy/">Privacy</a>
+        <a href="../terms/">Terms</a>
+        <a href="../help/">Help</a>
+        <a href="https://github.com/alyssaagard/verlass">Source code</a>
+      </nav>
+    </div>
+  </footer>
+  <script type="module" src="../assets/site.js"></script>
+</body>
+</html>

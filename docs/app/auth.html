@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verlass: sign in</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="../assets/theme.css">
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <script src="vendor/msal-browser.min.js"></script>
+  <style>body { margin: 0; padding: 24px; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--ui); }</style>
+</head>
+<body>
+  <p id="status" role="status">Signing in to Microsoft 365...</p>
+  <script>
+    (function () {
+      var KEY = "helpdesk.auth";
+      var GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      var TENANT = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[a-z0-9-]+(\.[a-z0-9-]+)+)$/i;
+      var status = document.getElementById("status");
+      function send(message) {
+        try {
+          Office.context.ui.messageParent(JSON.stringify(message));
+        } catch (e) {
+          status.textContent = message.ok ? "Signed in. You can close this window." : message.error || "Sign-in did not finish.";
+        }
+      }
+      Office.onReady(function () {
+        var q = new URLSearchParams(window.location.search);
+        var saved = null;
+        if (q.get("client")) {
+          saved = { client: q.get("client"), tenant: q.get("tenant") || "", scopes: (q.get("scopes") || "User.Read").split(" ").filter(Boolean), hint: String(q.get("hint") || "").toLowerCase() };
+        } else {
+          try { saved = JSON.parse(window.sessionStorage.getItem(KEY) || "null"); } catch (e) { saved = null; }
+        }
+        if (!saved || !GUID.test(saved.client) || !TENANT.test(saved.tenant)) {
+          send({ ok: false, error: "This window was opened without valid sign-in settings." });
+          return;
+        }
+        try { window.sessionStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) { /* The redirect below then cannot finish; the error is reported. */ }
+        msal.createStandardPublicClientApplication({
+          auth: { clientId: saved.client, authority: "https://login.microsoftonline.com/" + saved.tenant, redirectUri: window.location.origin + window.location.pathname },
+          cache: { cacheLocation: "localStorage" }
+        }).then(function (pca) {
+          return pca.handleRedirectPromise().then(function (result) {
+            if (result) return result;
+            // Use the account of the mailbox that opened this window, not just any signed-in one.
+            var accounts = pca.getAllAccounts();
+            var account = saved.hint ? accounts.filter(function (a) { return String(a.username).toLowerCase() === saved.hint; })[0] : accounts[0];
+            if (!account) return pca.acquireTokenRedirect(saved.hint ? { scopes: saved.scopes, loginHint: saved.hint } : { scopes: saved.scopes });
+            return pca.acquireTokenSilent({ scopes: saved.scopes, account: account }).catch(function () {
+              return pca.acquireTokenRedirect({ scopes: saved.scopes, account: account });
+            });
+          });
+        }).then(function (result) {
+          if (result && result.accessToken) send({ ok: true, accessToken: result.accessToken, expiresOn: result.expiresOn ? result.expiresOn.getTime() : 0 });
+        }).catch(function (e) {
+          send({ ok: false, error: String((e && e.message) || e) });
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
