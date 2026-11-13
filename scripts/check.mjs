@@ -33,7 +33,10 @@ const fail = (msg) => {
   if (process.env.GITHUB_ACTIONS) console.log("::error title=npm run check::" + String(msg).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A").slice(0, 1500));
 };
 const ok = (msg) => console.log("  ok   " + msg);
-const note = (msg) => console.log("  note " + msg);
+const note = (msg) => {
+  console.log("  note " + msg);
+  if (process.env.GITHUB_ACTIONS) console.log("::notice title=npm run check::" + String(msg).slice(0, 1500));
+};
 
 /** check(condition, "what should be true") records a failure when it is not. */
 const check = (condition, what) => {
@@ -68,7 +71,11 @@ async function runAreaTests() {
     try {
       const mod = await import(pathToFileURL(path.join(testDir, f)).href);
       const summary = await mod.run({ ROOT, fail, ok, note, check, load, wellFormed, xmllint });
-      if (failures === before && summary) ok(summary);
+      if (failures === before && summary) {
+        ok(summary);
+        // On GitHub Actions the summary of each area is shown on the run's page too.
+        if (process.env.GITHUB_ACTIONS) console.log("::notice title=" + f.replace(/\.mjs$/, "") + "::" + summary);
+      }
     } catch (e) {
       fail(`${f}: ${(e && e.stack) || e}`);
     }
