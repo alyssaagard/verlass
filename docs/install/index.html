@@ -3,20 +3,36 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Install | Verlass</title>
-  <meta name="description" content="Install Verlass for Gmail or Outlook: download packages and step by step guides for one person, a team, a school, a business, or a whole organization.">
+  <!-- seo:start (written by npm run build from scripts/seo.config.mjs; edit that file) -->
+  <title>Install Verlass | Gmail add-on and Outlook add-in</title>
+  <meta name="description" content="Install the free Verlass help desk as a Gmail add-on or an Outlook add-in, for one person, a small business, a school, or a whole organization.">
   <meta name="author" content="Alyssa I. Agard">
-  <meta property="og:title" content="Install | Verlass">
-  <meta property="og:description" content="Install Verlass for Gmail or Outlook: download packages and step by step guides for one person, a team, a school, a business, or a whole organization.">
-  <meta property="og:image" content="https://verlass.alyssaagard.dev/assets/brand/verlass-social.png">
-  <meta property="og:url" content="https://verlass.alyssaagard.dev/install/">
-  <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="theme-color" content="#141C18">
+  <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="https://verlass.alyssaagard.dev/install/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Verlass">
+  <meta property="og:title" content="Install Verlass | Gmail add-on and Outlook add-in">
+  <meta property="og:description" content="Install the free Verlass help desk as a Gmail add-on or an Outlook add-in, for one person, a small business, a school, or a whole organization.">
+  <meta property="og:url" content="https://verlass.alyssaagard.dev/install/">
+  <meta property="og:image" content="https://verlass.alyssaagard.dev/assets/brand/verlass-social.png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta property="og:image:alt" content="Verlass: a free IT help desk for Gmail and Outlook">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Install Verlass | Gmail add-on and Outlook add-in">
+  <meta name="twitter:description" content="Install the free Verlass help desk as a Gmail add-on or an Outlook add-in, for one person, a small business, a school, or a whole organization.">
+  <meta name="twitter:image" content="https://verlass.alyssaagard.dev/assets/brand/verlass-social.png">
+  <meta name="twitter:image:alt" content="Verlass: a free IT help desk for Gmail and Outlook">
+  <meta name="theme-color" content="#141C18" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#F1F4F2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141C18">
   <link rel="icon" href="../favicon.ico" sizes="any">
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../assets/icons/icon-96.png" type="image/png" sizes="96x96">
+  <link rel="icon" href="../assets/icons/icon-192.png" type="image/png" sizes="192x192">
   <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <link rel="manifest" href="../site.webmanifest">
+  <!-- seo:end -->
   <script>(function(){var d=document.documentElement;try{var c=localStorage.getItem("helpdesk.theme");if(c!=="light"&&c!=="system")c="dark";var l=c==="light"||(c==="system"&&window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches);d.setAttribute("data-theme",l?"light":"dark");d.setAttribute("data-theme-choice",c)}catch(e){d.setAttribute("data-theme","dark")}})();</script>
   <link rel="stylesheet" href="../assets/site.css">
 </head>
@@ -50,7 +66,7 @@
     <section class="tab-panel" id="gmail" role="tabpanel">
       <h2 style="margin-top:8px">Gmail</h2>
       <p class="prose">Verlass for Gmail is a Google Workspace add-on written in Google Apps Script. Tickets and settings are rows in one Google Sheet in your own Drive. It works with Google Workspace accounts and with free Gmail accounts.</p>
-      <p class="notice"><strong>New in version 2.0.0.</strong> The Gmail add-on has been tested against a simulated Gmail and Google Sheets, and has not yet been run in a live Google account. Try it with a few people first, and please <a href="https://github.com/alyssaagard/verlass/issues">report what you find</a>.</p>
+      <p class="notice"><strong>New in version 2.0.1.</strong> The Gmail add-on has been tested against a simulated Gmail and Google Sheets, and has not yet been run in a live Google account. Try it with a few people first, and please <a href="https://github.com/alyssaagard/verlass/issues">report what you find</a>.</p>
 
       <h3>Choose an install</h3>
       <div class="table-wrap"><table class="plain">
@@ -161,7 +177,7 @@
     <section class="tab-panel" id="outlook" role="tabpanel">
       <h2 style="margin-top:8px">Outlook</h2>
       <p class="prose">Verlass for Outlook is an Office add-in for Outlook on the web, the new and classic Outlook for Windows, Outlook for Mac, and Outlook for iOS and Android. Tickets are items in a SharePoint list in your own Microsoft 365 tenant, reached through Microsoft Graph as the signed-in person. It needs work or school accounts with Exchange Online mailboxes and SharePoint, which Microsoft 365 Business Basic, Standard, and Premium and the enterprise and education suites include. Personal Outlook.com accounts are not supported, and neither are the separate government and China clouds.</p>
-      <p class="notice"><strong>New in version 2.0.0.</strong> The Outlook add-in has been tested against a simulated Microsoft 365, not yet in a live tenant. Try it with a few people first, and please <a href="https://github.com/alyssaagard/verlass/issues">report what you find</a>.</p>
+      <p class="notice"><strong>New in version 2.0.1.</strong> The Outlook add-in has been tested against a simulated Microsoft 365, not yet in a live tenant. Try it with a few people first, and please <a href="https://github.com/alyssaagard/verlass/issues">report what you find</a>.</p>
 
       <h3>What an administrator does, once</h3>
       <p class="prose">A <strong>Global Administrator</strong> can do every step. An organization that keeps that role for emergencies can share the work, using the roles Microsoft names for each task: an <strong>Application Administrator</strong> or <strong>Cloud Application Administrator</strong> for registering the app and granting consent, a <strong>SharePoint Administrator</strong> who can also approve the setup permission for creating the lists, and an <strong>Exchange Administrator</strong> for deploying the add-in. Whoever creates the lists must be an Owner of the help desk site.</p>
@@ -258,7 +274,7 @@
 
   <footer class="site-foot">
     <div class="wrap">
-      <div>Verlass 2.0.0 by Alyssa I. Agard. Free and open source under the MIT License.</div>
+      <div>Verlass 2.0.1 by Alyssa I. Agard. Free and open source under the MIT License.</div>
       <nav aria-label="Footer">
         <a href="../privacy/">Privacy</a>
         <a href="../terms/">Terms</a>
@@ -271,7 +287,7 @@
   <script type="module">
     import { outlookManifest } from "../app/outlook/manifest.js";
     import { checkConfig, configQuery, scopesFor } from "../app/hosts/config.js";
-    const INFO = {"name":"Verlass","siteUrl":"https://verlass.alyssaagard.dev","addinId":"bb17164f-3928-4329-9458-1b70d3575dff","version":"2.0.0","provider":"Alyssa I. Agard","description":"A free, open-source help desk for any organization. People send and follow requests from Gmail or Outlook, and the team works its queue in the same place. Your data stays in your own Google or Microsoft 365 account."};
+    const INFO = {"name":"Verlass","siteUrl":"https://verlass.alyssaagard.dev","addinId":"bb17164f-3928-4329-9458-1b70d3575dff","version":"2.0.1","provider":"Alyssa I. Agard","description":"A free, open-source help desk for any organization. People send and follow requests from Gmail or Outlook, and the team works its queue in the same place. Your data stays in your own Google or Microsoft 365 account."};
     const form = document.getElementById("maker");
     const out = document.getElementById("maker-out");
     const result = document.getElementById("maker-result");

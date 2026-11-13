@@ -1,0 +1,6 @@
+# Verlass: every public page may be read and indexed.
+# Pages that should not appear in results on their own carry a noindex tag.
+User-agent: *
+Allow: /
+
+Sitemap: https://verlass.alyssaagard.dev/sitemap.xml

@@ -136,3 +136,17 @@ details.faq p { margin: 8px 0 0; color: var(--ink-soft); }
 /* Long code lines scroll inside their box instead of widening the page on a phone. */
 pre { max-width: 100%; overflow-x: auto; }
 .pane-message { padding: 16px; color: var(--muted); }
+
+/* Long addresses used as link text wrap instead of widening the page on a phone. */
+.site main a { overflow-wrap: anywhere; }
+
+/* A link to a step (for example #outlook-permissions) lands below the sticky header, not under it. */
+html { scroll-padding-top: 80px; }
+.tab-panel { scroll-margin-top: 48px; }
+@media (max-width: 600px) { html { scroll-padding-top: 150px; } }
+
+/* On a phone the install tabs stay on one row, and each label wraps inside its own tab. */
+@media (max-width: 560px) {
+  .tabs { flex-wrap: nowrap; }
+  .tabs button { flex: 1 1 0; min-width: 0; padding: 10px; line-height: 1.3; }
+}

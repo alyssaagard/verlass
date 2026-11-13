@@ -34,7 +34,7 @@ export async function run({ ROOT, check, load }) {
     const isSite = /class="site"/.test(html);
     if (isSite) {
       check((html.match(/<h1[ >]/g) || []).length === 1, `${name} has exactly one main heading`);
-      check(/<meta name="description" content="[^"]{30,}">/.test(html), `${name} has a description`);
+      check(/<meta name="robots" content="noindex">/.test(html) || /<meta name="description" content="[^"]{30,}">/.test(html), `${name} has a description`);
       check(html.includes(config.PROVIDER), `${name} names ${config.PROVIDER}`);
       check(/class="skip"/.test(html) && /id="main"/.test(html), `${name} has a skip link and a main landmark`);
       check(html.indexOf('data-theme="dark"') !== -1 && html.indexOf("localStorage.getItem") < html.indexOf('rel="stylesheet"'), `${name} sets the theme before its styles load, with dark as the default`);
