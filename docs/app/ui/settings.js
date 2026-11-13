@@ -2,13 +2,17 @@
  * The settings screens, for administrators. Everything the help desk does is set here:
  * branding, ticket fields, assignment, working hours, email notices and wording, and the
  * lists of categories, priorities, statuses, locations, team members, and assignment rules.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 import { h, clear, field, button, busy } from "./dom.js";
 import { GENERAL_FIELDS, TEMPLATE_KEYS, TEMPLATE_INFO, PLACEHOLDERS, PRESETS, STATUS_KINDS, normalizeSettings, presetById } from "../core/settings.js";
-import { LISTS, listById, listItems, incompleteItem } from "../core/lists.js";
+import { LISTS, listById, listItems, requiredColumn } from "../core/lists.js";
 import { renderNotification } from "../core/mail.js";
 import { ticketId } from "../core/tickets.js";
-import { plural } from "../core/text.js";
+import { plural, sameLabel } from "../core/text.js";
+
+const RENAMABLE_LISTS = ["statuses", "priorities", "categories", "locations"];
 
 const CHOICE_LABELS = {
   locationMode: { list: "Choose from the locations list", text: "Type anything", off: "No location field" },
@@ -157,7 +161,10 @@ function listsTab(s, save, params, app) {
     return spec;
   };
 
-  let rows = []; // each: { fields: { key: field } }
+  // Each row remembers the name it had when the list was loaded (from), so a save can say exactly
+  // which item was renamed. Rows made with Add have no from, and removed rows are simply gone, so
+  // a removal is never taken for a rename.
+  let rows = []; // each: { fields: { key: field }, from }
   const box = h("div", { class: "items" });
   const blank = () => {
     const item = {};
@@ -166,12 +173,15 @@ function listsTab(s, save, params, app) {
   };
   const read = () =>
     rows.map((r) => {
-      const item = {};
+      const item = { __from: r.from };
       def.columns.forEach((c) => (item[c.key] = r.fields[c.key].get()));
       return item;
     });
-  /** What to call an item when a button names it: its first filled column, or its position. */
-  const nameOfItem = (item, i) => String(item[def.columns[0].key] || item[def.columns[def.columns.length - 1].key] || "item " + (i + 1));
+  /** What to call an item when a button names it: its first filled text or email column, or its position. */
+  const nameOfItem = (item, i) => {
+    const c = def.columns.find((col) => (col.type === "text" || col.type === "email") && col.key !== "kind" && col.key !== "role" && String(item[col.key] || "").trim());
+    return c ? String(item[c.key]).trim() : "item " + (i + 1);
+  };
   const add = button("Add", () => {
     const now = read();
     now.push(blank());
@@ -184,7 +194,7 @@ function listsTab(s, save, params, app) {
     rows = items.map((item) => {
       const fields = {};
       def.columns.forEach((c) => (fields[c.key] = field(columnSpec(c, item[c.key]))));
-      return { fields };
+      return { fields, from: item.__from || null };
     });
     clear(box);
     rows.forEach((r, i) => {
@@ -221,21 +231,37 @@ function listsTab(s, save, params, app) {
       else add.focus();
     }
   }
-  draw(listItems(s, id).map((item) => Object.assign({}, item)));
+  draw(listItems(s, id).map((item) => Object.assign({ __from: RENAMABLE_LISTS.includes(id) ? item.name : null }, item)));
   out.appendChild(box);
 
   const go = button("Save " + def.title.toLowerCase(), () => {
     const blankItem = blank();
-    const items = read().filter((item) => def.columns.some((c) => String(item[c.key]) !== String(blankItem[c.key])));
+    const all = read();
+    const filled = all.map((item) => !!item.__from || def.columns.some((c) => String(item[c.key]) !== String(blankItem[c.key])));
     // An item without its required column would be dropped, so say so instead of losing it.
-    const problem = incompleteItem(id, items);
-    if (problem) {
-      app.toast(problem, "bad");
+    // The number is the row's place on the screen, counting untouched empty rows too.
+    const col = requiredColumn(id);
+    const missing = all.findIndex((item, i) => filled[i] && !String(item[col.key] === null || item[col.key] === undefined ? "" : item[col.key]).trim());
+    if (missing !== -1) {
+      app.toast("Item " + (missing + 1) + ' needs a value for "' + col.label + '".', "bad");
+      const input = rows[missing] && rows[missing].fields[col.key] && rows[missing].fields[col.key].input;
+      if (input) input.focus();
       return undefined;
     }
+    const items = all.filter((_, i) => filled[i]);
+    const renames = {};
+    if (RENAMABLE_LISTS.includes(id)) {
+      renames[id] = {};
+      for (const item of items) if (item.__from && !sameLabel(item.__from, item.name)) renames[id][item.__from] = item.name;
+    }
+    const clean = items.map((item) => {
+      const copy = Object.assign({}, item);
+      delete copy.__from;
+      return copy;
+    });
     const lists = {};
-    lists[id] = id === "locations" ? items.map((x) => x.name) : items;
-    return save(go, { lists }, { list: id });
+    lists[id] = id === "locations" ? clean.map((x) => x.name) : clean;
+    return save(go, { lists, renames }, { list: id });
   }, "primary");
   out.appendChild(h("div", { class: "btn-row" }, add, go));
 
@@ -249,7 +275,9 @@ function listsTab(s, save, params, app) {
         return undefined;
       }
       const p = presetById(preset.get());
-      return save(use, { lists: { categories: p.categories.map((name) => ({ name, active: true })), locations: p.locations.slice() }, general: { locationLabel: p.locationLabel } }, { list: id });
+      // A preset replaces the lists. It renames nothing: old tickets keep their names, and
+      // Settings lists them under "To review".
+      return save(use, { lists: { categories: p.categories.map((name) => ({ name, active: true })), locations: p.locations.slice() }, general: { locationLabel: p.locationLabel }, renames: {} }, { list: id });
     }, "quiet");
     out.appendChild(h("details", { class: "group" }, h("summary", { text: "Start from a preset" }), h("div", { class: "stack tight" }, preset.el, use)));
   }
@@ -327,10 +355,16 @@ function emailTab(s, save, state) {
     )
   );
 
+  // The drafts kept for the redraw leave out this email once it is saved. They are copied, so a
+  // save that fails keeps the typed wording for when the administrator switches back.
+  const without = () => {
+    const copy = Object.assign({}, drafts);
+    delete copy[key];
+    return copy;
+  };
   const go = button("Save this email", () => {
     const patch = { templates: { [key]: { subject: subject.get(), body: body.get() } } };
-    delete drafts[key];
-    return save(go, patch, { key, drafts });
+    return save(go, patch, { key, drafts: without() });
   }, "primary");
   let armed = false;
   const reset = button("Use the original wording", () => {
@@ -339,8 +373,7 @@ function emailTab(s, save, state) {
       reset.textContent = "Select again to replace this wording";
       return undefined;
     }
-    delete drafts[key];
-    return save(reset, { templates: { [key]: { subject: "", body: "" } } }, { key, drafts });
+    return save(reset, { templates: { [key]: { subject: "", body: "" } } }, { key, drafts: without() });
   }, "quiet");
   pick.input.addEventListener("change", () => {
     // Show the chosen email without leaving the tab. Wording typed for the others is kept.

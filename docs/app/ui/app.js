@@ -8,6 +8,8 @@
  *              signOut()      optional
  *              demo           optional, the demo backend (personas, outbox, reset)
  *              setupScreen(app)  optional, a screen to show when the help desk is not set up }
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 import { h, clear, field, button, busy, shortDate, toLocalInput, fromLocalInput, THEMES, themeChoice, setTheme } from "./dom.js";
 import { TEAM_VIEWS, LIMITS } from "../core/tickets.js";
@@ -374,7 +376,10 @@ export function mountApp(root, options) {
   // --- One ticket ------------------------------------------------------------------
 
   screens.ticket = async (params) => {
+    // A saved result and kept drafts are used once. Coming back to this screen later (Back from
+    // Settings, Try again) reads the ticket fresh and starts with empty boxes.
     const d = params.detail || (await app.ask("get", { id: params.id }));
+    delete params.detail;
     if (!d) return h("div", {}, button("Back", () => app.back()));
     const s = settings();
     const g = s.general;
@@ -420,22 +425,38 @@ export function mountApp(root, options) {
 
     const entry = app.top();
     const draft = params.draft || {};
-    /** Text typed into a reply or note box that this save did not send, to put back after the redraw. */
+    delete params.draft;
+    /**
+     * Text in the reply and note boxes that is not yet saved, to put back after a redraw: all of
+     * a box that was not sent, and whatever was typed into a sent box while the save ran.
+     */
     const unsent = (changes) => {
       const out = {};
       for (const name of ["reply", "note"]) {
         const el = out_.querySelector('[name="' + name + '"]');
-        if (el && el.value && !changes[name]) out[name] = el.value;
+        const now = el ? el.value : "";
+        const sent = String(changes[name] || "");
+        if (!now.trim() || now === sent) continue;
+        out[name] = sent && now.startsWith(sent) ? now.slice(sent.length).replace(/^\s+/, "") : now;
+        if (!out[name]) delete out[name];
       }
       return out;
     };
     const save = async (btn, changes, okText) =>
       busy(btn, async () => {
-        const keep = unsent(changes);
         const result = await app.ask("update", { id: t.id, expectedUpdatedAt: t.updatedAt, changes });
-        if (!result) return;
+        if (!result) {
+          // When someone else changed the ticket meanwhile, show the latest and keep every word typed.
+          const fresh = await service.call("get", { id: t.id });
+          if (fresh.ok && fresh.ticket.updatedAt !== t.updatedAt) await app.replaceIfTop(entry, "ticket", { id: t.id, detail: fresh, draft: unsent({}) });
+          return;
+        }
         app.toast(result.changed ? okText || "Saved." : "Nothing was changed.");
-        if (result.noteProblem) app.toast("The internal note could not be saved: " + result.noteProblem, "bad");
+        const keep = unsent(changes);
+        if (result.noteProblem && changes.note) {
+          keep.note = changes.note;
+          app.toast("The internal note could not be saved: " + result.noteProblem, "bad");
+        }
         if (result.mailProblems && result.mailProblems.length) app.toast("An email notice could not be sent: " + result.mailProblems[0], "bad");
         await refreshBoot();
         // If the person went Back or opened something else while this was saving, leave them there.

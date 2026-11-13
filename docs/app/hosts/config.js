@@ -6,6 +6,8 @@
  * the manifest), so the task pane opens with them in its address:
  *   outlook.html?client=<application id>&tenant=<tenant id>&site=<site address>&mail=on&access=selected
  * They are also remembered in this browser, so the browser app can be opened without them.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 
 const KEY = "helpdesk.m365";

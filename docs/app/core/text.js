@@ -2,6 +2,8 @@
  * Small text helpers shared by every host (Gmail add-on, Outlook task pane, browser demo).
  * Everything in docs/app/core is plain JavaScript with no browser or Google objects, so the
  * same code runs in Apps Script, in a task pane, and in Node for the tests.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 
 /** Escapes text for use inside HTML. */
@@ -70,20 +72,26 @@ export function sameLabel(a, b) {
   return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
 }
 
+/** An invisible character (zero width space) placed in front of text that needs guarding. */
+export const SHEET_GUARD = "\u200B";
+
 /**
- * Text that a spreadsheet would read as a formula (it starts with =, +, -, or @) gets a
- * leading apostrophe, so a ticket can never run a formula in the help desk's workbook.
- * Text that itself starts with an apostrophe gets one too, because Sheets drops the first.
+ * Text that a spreadsheet would read as a formula (it starts with =, +, -, or @) gets an
+ * invisible character in front, so a ticket can never run a formula in the help desk's
+ * workbook. So does text that starts with an apostrophe, which Sheets may take as a marker and
+ * drop, and text that starts with the invisible character itself. An apostrophe is not used as
+ * the guard, because whether Sheets keeps or drops a leading apostrophe written by a script is
+ * not documented; the invisible character is kept either way.
  */
 export function sheetSafe(value) {
   if (typeof value !== "string") return value;
-  return /^[=+\-@\t\r']/.test(value) ? "'" + value : value;
+  return /^[=+\-@\t\r'\u200B]/.test(value) ? SHEET_GUARD + value : value;
 }
 
 /** Reverses sheetSafe for text read back from a spreadsheet. */
 export function sheetRead(value) {
   if (typeof value !== "string") return value;
-  return /^'[=+\-@\t\r']/.test(value) ? value.slice(1) : value;
+  return value.charAt(0) === SHEET_GUARD ? value.slice(1) : value;
 }
 
 /** A valid #RRGGBB color, or the fallback. */

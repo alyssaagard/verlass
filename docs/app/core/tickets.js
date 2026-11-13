@@ -5,6 +5,8 @@
  * ticket, the change someone asked for, and the settings, and return a plan: the new ticket,
  * the activity lines to record, the messages to add, and the notifications to send. Each host
  * (Apps Script, the task pane, the demo) carries the plan out with its own storage and mail.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 import { clean, cleanLine, normalizeEmail, sameEmail, sameLabel, nameFromEmail, toIso, toMs } from "./text.js";
 import { statusKind, initialStatus, firstDoneStatus, findStatus, findPriority, priorityRank, findCategory, activeTeam, roleOf, teamMember, timeToMinutes } from "./settings.js";
@@ -40,27 +42,55 @@ export function computeDue(start, hours, settings, localParts) {
   const holidays = g.holidays ? g.holidays.split(",") : [];
   const dayStart = timeToMinutes(g.workStart);
   const dayEnd = timeToMinutes(g.workEnd);
-  let remaining = Math.round(h * 60);
+  const dayNumber = (date) => Math.round(Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10))) / 86400000);
+
+  /**
+   * The moment when the local clock first shows `target` minutes after the local midnight that
+   * starts the day of `from` (target may be 1440, the next midnight). Local days can be 23 or 25
+   * hours long when clocks change, so the moment is found by asking for the local time instead of
+   * adding minutes. When the target falls in an hour that the clocks skip, the first moment after
+   * the gap is returned.
+   */
+  function at(from, p, target) {
+    const base = dayNumber(p.date);
+    const local = (ms) => {
+      const q = localParts(new Date(ms));
+      return (dayNumber(q.date) - base) * 1440 + q.minutes;
+    };
+    let ms = from + (target - p.minutes) * 60000;
+    for (let i = 0; i < 4; i++) {
+      const now = local(ms);
+      if (now === target) return ms;
+      ms += (target - now) * 60000;
+    }
+    let lo = from;
+    let hi = from + (target - p.minutes + 180) * 60000;
+    while (hi - lo > 60000) {
+      const mid = lo + Math.floor((hi - lo) / 120000) * 60000;
+      if (local(mid) >= target) hi = mid;
+      else lo = mid;
+    }
+    return hi;
+  }
+
+  let remaining = Math.round(h * 60) * 60000;
   let cursor = startMs;
   for (let guard = 0; guard < 20000; guard++) {
     const p = localParts(new Date(cursor));
     const working = days.includes(p.dow) && !holidays.includes(p.date);
     if (!working || p.minutes >= dayEnd) {
-      // Go to the next local midnight, then look again. Looking again keeps this right when clocks change.
-      cursor += Math.max(1, 1440 - p.minutes) * 60000;
+      cursor = at(cursor, p, 1440);
       continue;
     }
     if (p.minutes < dayStart) {
-      cursor += (dayStart - p.minutes) * 60000;
-      // On the morning the clocks change, that step can land an hour off. Correct it once.
-      const q = localParts(new Date(cursor));
-      if (q.date === p.date && q.minutes !== dayStart) cursor += (dayStart - q.minutes) * 60000;
+      cursor = at(cursor, p, dayStart);
       continue;
     }
-    const available = dayEnd - p.minutes;
-    if (remaining <= available) return new Date(cursor + remaining * 60000).toISOString();
+    const end = at(cursor, p, dayEnd);
+    const available = end - cursor;
+    if (remaining <= available) return new Date(cursor + remaining).toISOString();
     remaining -= available;
-    cursor += available * 60000;
+    cursor = end;
   }
   return calendar;
 }

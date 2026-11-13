@@ -40,11 +40,21 @@ export async function run({ ROOT, check, note }) {
       { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 120000, maxBuffer: 64 * 1024 * 1024 }
     );
   try {
+    // First make sure the browser can start at all, on a page that does nothing. Only that
+    // failure skips the tests; a hang or crash on the real pages is a failure, not a skip.
+    const probe = path.join(profile, "probe.html");
+    fs.writeFileSync(probe, '<!DOCTYPE html><html><body><pre id="result">[]</pre></body></html>');
+    try {
+      dump(probe, 1000);
+    } catch (e) {
+      note("the browser could not be started here; the browser tests were skipped (" + String(e.message).split("\n")[0].slice(0, 80) + ")");
+      return "";
+    }
     let dom;
     try {
       dom = dump(path.join(ROOT, "scripts/tests/ui-harness.html"), 60000);
     } catch (e) {
-      note("the browser could not be started here; the browser tests were skipped (" + String(e.message).split("\n")[0].slice(0, 80) + ")");
+      check(false, "the browser scenario finished (" + String(e.message).split("\n")[0].slice(0, 120) + ")");
       return "";
     }
     const m = /<pre id="result">([\s\S]*?)<\/pre>/.exec(dom);

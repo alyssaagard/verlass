@@ -4,6 +4,8 @@
  * It holds sample tickets for an invented organization, lets the visitor act as a staff
  * member, a team member, or the administrator, and keeps every email it "sends" in an outbox
  * so the visitor can read it. Nothing leaves the browser, and nothing needs a sign-in.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 import { defaultSettings, normalizeSettings, statusKind, findPriority, renameOnTicket } from "../core/settings.js";
 import { ticketId, computeDue } from "../core/tickets.js";
@@ -188,8 +190,9 @@ export function makeDemoBackend(options) {
       let count = 0;
       s.tickets = s.tickets.map((t) => {
         const next = renameOnTicket(t, plan);
-        if (next) count++;
-        return next || t;
+        if (!next) return t;
+        count++;
+        return Object.assign(next, { updatedAt: new Date().toISOString() });
       });
       save();
       return count;

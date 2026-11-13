@@ -3,6 +3,8 @@
  *
  * Every setting can be changed here without touching code. The same settings are also rows
  * in the help desk's spreadsheet, for people who would rather edit a table.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 
 var SettingsCards = (function () {
@@ -99,7 +101,7 @@ var SettingsCards = (function () {
     var list = Core.listById(id);
     if (!list) throw new Error("Unknown list.");
     var section = CardService.newCardSection();
-    section.addWidget(CardService.newTextParagraph().setText(esc(list.help) + "<br><br>One item per line. Separate the columns with a vertical bar:<br><b>" + esc(Core.listFormat(id)) + "</b>"));
+    section.addWidget(CardService.newTextParagraph().setText(esc(list.help) + "<br><br>One item per line. Separate the columns with a vertical bar:<br><b>" + esc(Core.listFormat(id)) + "</b>" + (["statuses", "priorities", "categories", "locations"].indexOf(id) !== -1 ? "<br><br>To rename an item, change its name on its own line and change nothing else in this list in the same save; tickets that use it are renamed too. If you also add, remove, or move lines, nothing is renamed, and tickets keep their old names." : "")));
     section.addWidget(CardService.newTextInput().setFieldName("items").setTitle(list.title).setMultiline(true).setValue(Core.listToText(s, id)));
     section.addWidget(Ui.filled("Save", "uiSettingsSaveList", { list: id }, Core.buttonColor(s.general.accentColor)));
     return CardService.newCardBuilder().setHeader(CardService.newCardHeader().setTitle(list.title).setSubtitle("Settings")).addSection(section).build();

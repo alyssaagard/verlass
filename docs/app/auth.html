@@ -29,7 +29,7 @@
         var q = new URLSearchParams(window.location.search);
         var saved = null;
         if (q.get("client")) {
-          saved = { client: q.get("client"), tenant: q.get("tenant") || "", scopes: (q.get("scopes") || "User.Read").split(" ").filter(Boolean), hint: String(q.get("hint") || "").toLowerCase() };
+          saved = { client: q.get("client"), tenant: q.get("tenant") || "", scopes: (q.get("scopes") || "User.Read").split(" ").filter(Boolean), hint: String(q.get("hint") || "").toLowerCase(), temp: q.get("temp") === "1" };
         } else {
           try { saved = JSON.parse(window.sessionStorage.getItem(KEY) || "null"); } catch (e) { saved = null; }
         }
@@ -40,7 +40,8 @@
         try { window.sessionStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) { /* The redirect below then cannot finish; the error is reported. */ }
         msal.createStandardPublicClientApplication({
           auth: { clientId: saved.client, authority: "https://login.microsoftonline.com/" + saved.tenant, redirectUri: window.location.origin + window.location.pathname },
-          cache: { cacheLocation: "localStorage" }
+          // The one-time setup permission is kept in this page's memory only, never in storage.
+          cache: { cacheLocation: saved.temp ? "memoryStorage" : "localStorage" }
         }).then(function (pca) {
           return pca.handleRedirectPromise().then(function (result) {
             if (result) return result;

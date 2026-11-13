@@ -2,6 +2,8 @@
  * Starts the help desk for Microsoft 365, in the Outlook task pane (kind "outlook") or in an
  * ordinary browser tab (kind "web"): read the connection settings, sign in, and open the app
  * on the organization's SharePoint lists. Also holds the one-time setup screen.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 import { h, clear, button, busy, field, initTheme } from "../ui/dom.js";
 import { mountApp } from "../ui/app.js";
@@ -89,7 +91,9 @@ export async function startM365(root, options) {
           await auth.interactive(scopes);
           banner.remove();
           banner = null;
-          if (appRef) await appRef.home();
+          // Keep the screen and anything typed on it; the person simply sends it again.
+          if (appRef && appRef.boot) appRef.toast("You are signed in again. Please try once more.");
+          else if (appRef) await appRef.home();
         } catch (e) {
           go.textContent = "Sign in again";
         }
@@ -100,6 +104,10 @@ export async function startM365(root, options) {
   /** A token without opening a window. When that is not possible, ask the person to sign in again. */
   const getToken = async (wanted) => {
     const token = await auth.silent(wanted || scopes);
+    if (token && banner) {
+      banner.remove();
+      banner = null;
+    }
     if (token) return token;
     if (auth.mode === "dialog") return auth.interactive(wanted || scopes); // The Office dialog may open by itself.
     askToSignIn();
@@ -133,12 +141,18 @@ export async function startM365(root, options) {
     }
   };
 
-  const token = await auth.silent(scopes);
+  let token = null;
+  let startProblem = "";
+  try {
+    token = await auth.silent(scopes);
+  } catch (e) {
+    startProblem = String((e && e.message) || e);
+  }
   if (token) {
     await open();
     return;
   }
-  const problem = h("div", { class: "notice bad", hidden: true, role: "alert" });
+  const problem = h("div", { class: "notice bad", hidden: !startProblem, role: "alert", text: startProblem });
   const go = button("Sign in with Microsoft", () =>
     busy(go, async () => {
       try {
@@ -149,7 +163,7 @@ export async function startM365(root, options) {
         problem.hidden = false;
       }
     }), "primary big");
-  shell(root, h("h1", { text: o.name }), h("p", { text: "Sign in with your work or school account to open the help desk." }), go, problem, h("p", { class: "muted", text: "If Microsoft says an administrator must approve this app, send your administrator the install guide." }), h("p", {}, h("a", { href: help, target: "_blank", rel: "noopener" }, "Install guide")));
+  shell(root, h("h1", { text: o.name }), h("p", { text: "Sign in with your work or school account to open the help desk." }), go, problem, h("p", { class: "muted", text: "If Microsoft says \"Need admin approval\", send your administrator the install guide." }), h("p", {}, h("a", { href: help, target: "_blank", rel: "noopener" }, "Install guide")));
 }
 
 /** Shown when the page has no connection settings, or they are not valid. */
@@ -233,8 +247,8 @@ function setupView(ctx) {
       h(
         "div",
         { class: "stack tight" },
-        h("p", { text: "Step 1 asks you to approve one higher permission (" + setupScopesFor(config)[0] + "). It is used to " + (config.access === "selected" ? "give this add-in access to the one site and to create three lists on it" : "create three lists on the site") + ", and for nothing else. You need to be a Global Administrator and an Owner of the site." }),
-        h("p", { text: "When Microsoft asks, leave \"Consent on behalf of your organization\" unchecked. Afterward, remove this permission again as the install guide describes." }),
+        h("p", { text: "Step 1 asks you to approve one higher permission (" + setupScopesFor(config)[0] + "). It is used to " + (config.access === "selected" ? "give this add-in access to the one site and to create three lists on it" : "create three lists on the site") + ", and for nothing else. You need to be an administrator who can approve it (a Global Administrator, or a SharePoint Administrator who can also grant consent) and an Owner of the site." }),
+        h("p", { text: "When Microsoft asks, leave \"Consent on behalf of your organization\" unchecked. Afterward, remove this permission again as the install guide's step \"Remove the setup permission\" describes." }),
         h("p", { class: "muted", text: "Site: " + config.site }),
         lists,
         org.el,

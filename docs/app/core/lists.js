@@ -3,6 +3,8 @@
  *
  * LISTS describes each list's columns once. The spreadsheet tabs, the Gmail settings cards
  * (one item per line, columns separated by " | "), and the web settings screen all use it.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 
 export const LISTS = [

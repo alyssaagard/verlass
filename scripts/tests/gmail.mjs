@@ -75,7 +75,7 @@ export async function run({ ROOT, check, load }) {
       eq([c.title, pat.notification()], ["TKT-0001", "TKT-0001 was sent."], "a ticket is created and shown");
       check(c.all.includes("&lt;b&gt;jams&lt;/b&gt;") && !c.all.includes("<b>jams</b>"), "text typed by a person is escaped on the card");
       check(!sheetOf(world).book.getSheets().some((s) => s.hasFormula()), "nothing a person typed became a spreadsheet formula");
-      eq(rows(world, "Tickets")[0].slice(5, 7), ["=IMPORTXML(\"http://evil\")", "The printer <b>jams</b>\n+1 every time"], "the Sheet holds the text exactly as typed");
+      eq(rows(world, "Tickets")[0].slice(5, 7), ["\u200B=IMPORTXML(\"http://evil\")", "The printer <b>jams</b>\n+1 every time"], "the Sheet holds the text as typed, with an invisible guard in front of a formula");
       eq(rows(world, "Settings").filter((r) => r[0] === "Time zone").map((r) => r[1]), ["America/New_York"], "setup records the help desk's time zone, so due times do not depend on who is looking");
       eq(world.mail.map((m) => [m.from, m.to, m.subject.slice(0, 11)]), [["pat@example.com", "pat@example.com", "[TKT-0001] "], ["pat@example.com", "ana@example.com", "[TKT-0001] "]], "the requester and the team are emailed");
       check(world.mail.every((m) => !m.htmlBody.includes("<b>jams</b>") && m.name === "Example Co IT Help Desk"), "email is escaped and carries the help desk's name");
@@ -168,10 +168,22 @@ export async function run({ ROOT, check, load }) {
       c = ana.click("Edit", {}, { group: "Branding" });
       c = ana.click("Save", { accentColor: "greenish", website: "www.example.org" });
       check(/Corrected because the value could not be used: Accent color\./.test(ana.notification()), "a value that could not be used is named when saving");
-      // Renaming a status in place renames it on the tickets that use it.
+      // Renaming a status in place renames it on the tickets that use it, and touches nothing else.
+      const handTab = tab(world, "Tickets");
+      handTab.getRange(2, 15, 1, 1).setValues([["walk-in"]]);
+      const updatedBefore = rows(world, "Tickets")[0][2];
+      world.tick(60000);
       c = ana.click("Edit", {}, { list: "statuses" });
       c = ana.click("Save", { items: "Open | open | no\nWorking on it | open | yes\nWaiting on requester | waiting | yes\nResolved | done | yes\nClosed | done | no" });
       check(/Renamed on 1 ticket\./.test(ana.notification()) && rows(world, "Tickets")[0][10] === "Working on it", "renaming a status renames it on the tickets that use it");
+      eq(rows(world, "Tickets")[0][14], "walk-in", "a value typed by hand into another column is left exactly as it was");
+      check(rows(world, "Tickets")[0][2] > updatedBefore, "a renamed ticket gets a new Updated time, so an open card is told to look again");
+      // Removing one line and changing another in the same save is not taken for a rename.
+      c = ana.click("Edit", {}, { list: "statuses" });
+      c = ana.click("Save", { items: "Open | open | no\nWorking on it | open | yes\nFixed | done | yes\nClosed | done | no" });
+      eq(rows(world, "Tickets")[0][10], "Working on it", "a removed line next to an edited one renames nothing");
+      c = ana.click("Edit", {}, { list: "statuses" });
+      c = ana.click("Save", { items: "Open | open | no\nWorking on it | open | yes\nWaiting on requester | waiting | yes\nResolved | done | yes\nClosed | done | no" });
       c = ana.click("Edit", {}, { key: "created" });
       c = ana.click("Save", { subject: "Got it: {{ticket.id}}", body: "Thanks, {{requester.name}}." });
       eq(rows(world, "Email wording")[0].slice(0, 3), ["created", "Got it: {{ticket.id}}", "Thanks, {{requester.name}}."], "email wording is saved");
@@ -258,9 +270,17 @@ export async function run({ ROOT, check, load }) {
       const owner = makeSession(addon, "helpdesk@example.com");
       c = owner.open();
       check(c.buttons.some((b) => b.text === "Create the help desk"), "the owner is offered the setup");
+      // The owner's first visit connected the add-on. Until the owner creates the help desk, nobody else may.
+      addon.user = "pat@example.com";
+      addon.reset();
+      const early = addon.context.Api.call("setup", { preset: "school", orgName: "Not mine" });
+      check(!early.ok && /Only the help desk owner can set it up/.test(early.errors[0]) && world.files.size === 0, "a staff member cannot create the help desk before the owner does");
       c = owner.click("Create the help desk", { orgName: "Example Org", preset: "school" });
       eq([c.title, sheetOf(world).owner, sheetOf(world).editors.size], ["IT Help Desk", "helpdesk@example.com", 0], "the Sheet belongs to the owner and is shared with no one");
       check(service.properties.get("ALLOWED_AUDIENCE") === addon.audience, "the service remembers which add-on project it answers");
+      // With the Time zone setting cleared, the cards must still use the service's zone (from boot), not the add-on's.
+      const cleared = service.context.Service.handle("settingsSave", { general: { timeZone: "" } }, { email: "helpdesk@example.com" });
+      eq([cleared.ok, cleared.settings.general.timeZone], [true, ""], "the time zone setting can be cleared");
 
       c = pat.open();
       eq(c.buttons.map((b) => b.text), ["New request", "View"], "a staff member can use the help desk without any access to the Sheet");
@@ -306,17 +326,21 @@ export async function run({ ROOT, check, load }) {
       check(/made for a different add-on/.test(c.all), "a sign-in token issued to another project is refused");
 
       // With ALLOWED_DOMAIN set, outside accounts are refused.
-      service.properties.set("ALLOWED_DOMAIN", "example.com");
+      service.properties.set("ALLOWED_DOMAIN", "example.com, example.net");
       c = makeSession(addon, "eve@elsewhere.org").open();
-      check(/only accepts accounts from example.com/.test(c.all), "an account from another domain is refused");
+      check(/belongs to the Google Workspace domain elsewhere.org, which this help desk does not accept/.test(c.all), "an account from another domain is refused, and the message names its domain");
       c = pat.open();
       check(c.buttons.some((b) => b.text === "New request"), "accounts from the allowed domain still work");
+      // Staff whose addresses use a secondary domain carry the organization's primary domain in hd.
+      addon.hd = "example.com";
+      world.tick(400000);
+      c = makeSession(addon, "lee@example.org").open();
+      check(c.buttons.some((b) => b.text === "New request"), "staff on a secondary domain of an allowed organization are accepted");
       // A personal Google account registered with an address at the domain is not a domain account.
       addon.hd = "";
-      c = pat.open();
       world.tick(400000);
       c = pat.open();
-      check(/only accepts accounts from example.com/.test(c.all), "the domain check uses Google's own domain claim, not the email address");
+      check(/personal Google accounts are not accepted/.test(c.all), "the domain check uses Google's own domain claim, not the email address");
       addon.hd = null;
       service.properties.delete("ALLOWED_DOMAIN");
 
@@ -330,6 +354,11 @@ export async function run({ ROOT, check, load }) {
 
       // The owner can also set up from the editor, without the add-on.
       const world2 = makeWorld();
+      // When Google gives no address for the account the code runs as, nobody counts as the owner.
+      const blank = makeProject({ world: makeWorld(), files: filesFor("standard"), user: "ana@example.com", effectiveEmpty: true });
+      const blankBoot = blank.context.Service.handle("boot", {}, { email: "ana@example.com" });
+      const blankSetup = blank.context.Service.handle("setup", { preset: "office" }, { email: "ana@example.com" });
+      check(blankBoot.canSetup === false && !blankSetup.ok, "without an owner address, setup is refused rather than open to anyone");
       const service2 = makeProject({ world: world2, files: filesFor("service"), owner: "desk@example.com", user: "desk@example.com" });
       service2.context.setupHelpDesk();
       eq(rows(world2, "Team"), [["desk@example.com", "Desk", "admin", "yes"]], "setupHelpDesk run from the editor creates the help desk");

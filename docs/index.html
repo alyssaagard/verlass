@@ -51,7 +51,7 @@
         <p class="notice small"><strong>Your data stays yours.</strong> Tickets live in a Google Sheet in your own Google account, or in a list in your own Microsoft 365. Verlass has no server, no account to create, and no tracking.</p>
       </div>
       <div class="hero-art">
-        <div class="pane" aria-label="A live Verlass demo with sample tickets"><div id="demo-app"></div></div>
+        <div class="pane" role="region" aria-label="A live Verlass demo with sample tickets"><div id="demo-app"><noscript><p class="pane-message">The live demo needs JavaScript. The install guide works without it.</p></noscript></div></div>
       </div>
     </section>
 
@@ -100,21 +100,28 @@
   </footer>
   <script type="module" src="assets/site.js"></script>
   <script type="module">
-    import { mountApp } from "./app/ui/app.js";
-    import { makeService } from "./app/stores/service.js";
-    import { makeDemoBackend } from "./app/stores/demo.js";
-    let storage = null;
-    try { storage = window.sessionStorage; storage.getItem("x"); } catch (e) { storage = null; }
-    const backend = makeDemoBackend({ storage });
-    const app = mountApp(document.getElementById("demo-app"), {
-      service: makeService(backend),
-      host: { kind: "demo", name: "Verlass", siteUrl: "./".replace(/\/$/, "") || ".", demo: backend, embedded: true, onReset: () => draw() },
-    });
-    const buttons = Array.from(document.querySelectorAll("[data-persona]"));
-    function draw() { buttons.forEach((b) => b.setAttribute("aria-pressed", b.dataset.persona === backend.persona() ? "true" : "false")); }
-    buttons.forEach((b) => b.addEventListener("click", async () => { backend.setPersona(b.dataset.persona); draw(); await app.home(); }));
-    draw();
-    window.__demo = { app, backend };
+    // The modules load one by one, so a failure (for example right after a release, while old
+    // files are still cached) shows a message instead of an empty pane.
+    const pane = document.getElementById("demo-app");
+    Promise.all([import("./app/ui/app.js"), import("./app/stores/service.js"), import("./app/stores/demo.js")])
+      .then(([ui, svc, demo]) => {
+        let storage = null;
+        try { storage = window.sessionStorage; storage.getItem("x"); } catch (e) { storage = null; }
+        const backend = demo.makeDemoBackend({ storage });
+        const app = ui.mountApp(pane, {
+          service: svc.makeService(backend),
+          host: { kind: "demo", name: "Verlass", siteUrl: "./".replace(/\/$/, "") || ".", demo: backend, embedded: true, onReset: () => draw() },
+        });
+        const buttons = Array.from(document.querySelectorAll("[data-persona]"));
+        function draw() { buttons.forEach((b) => b.setAttribute("aria-pressed", b.dataset.persona === backend.persona() ? "true" : "false")); }
+        buttons.forEach((b) => b.addEventListener("click", async () => { backend.setPersona(b.dataset.persona); draw(); await app.home(); }));
+        draw();
+        window.__demo = { app, backend };
+      })
+      .catch(() => {
+        pane.textContent = "The demo could not load. Reload the page in a minute.";
+        pane.className = "pane-message";
+      });
   </script>
 </body>
 </html>

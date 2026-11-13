@@ -20,6 +20,8 @@ WHAT IS IN THIS PACKAGE
   Store.gs          Reads and writes the help desk's Google Sheet.
   Core.gs           The rules shared with ${NAME} for Outlook.
   appsscript.json   The project settings and the permissions it asks for.
+  LICENSE.txt       The MIT License, which lets you use, change, and share
+                    ${NAME}. Keep it with any copy you pass on.
   README.txt        This guide.
 
 Everything runs in your own Google account. Tickets and settings are rows in
@@ -116,6 +118,8 @@ WHAT IS IN THIS PACKAGE
   addon/     The add-on people install: Addon.gs, Cards.gs, Core.gs,
              SettingsCards.gs, and appsscript.json. It asks staff only to
              run in Gmail, know their email address, and reach the service.
+  LICENSE.txt The MIT License, which lets you use, change, and share
+             ${NAME}. Keep it with any copy you pass on.
   README.txt This guide.
 
 In this install the Google Sheet is shared with no one but its owner. The
@@ -144,9 +148,13 @@ PART 1: THE SERVICE
      has not verified this app, because the project is your own. Select
      Advanced, then Go to ${NAME} service (unsafe).
   5. Copy the Web app URL. It ends in /exec.
-  6. Recommended: in Project Settings, under Script properties, add a
-     property named ALLOWED_DOMAIN with your domain, for example example.org.
-     The service then refuses accounts from anywhere else.
+  6. Recommended for Google Workspace: in Project Settings, under Script
+     properties, add a property named ALLOWED_DOMAIN with your organization's
+     primary domain, for example example.org. That is the domain shown first
+     in the Google Admin console under Account, Domains, even when people use
+     addresses at another of its domains. Separate several with commas. The
+     service then refuses accounts from anywhere else. Do not set it for free
+     Gmail accounts, which have no organization domain.
 
 PART 2: THE ADD-ON
 
@@ -176,7 +184,8 @@ WHY THE WEB APP IS OPEN TO "ANYONE"
 OTHER PEOPLE
 
   For a few trusted people, share the add-on project (never the service
-  project) with them as Editor and have each one do steps 4 and 5 of Part 2.
+  project) with them as Editor and have each one do step 4 of Part 2, then
+  open ${NAME} in Gmail and authorize it.
   Anyone who can edit the add-on project can change its code and could act as
   another person, so do not share it with ordinary staff. For them, publish
   the add-on project in the Google Workspace Marketplace for your
@@ -214,6 +223,8 @@ WHAT IS IN THIS PACKAGE
   ${SLUG}-manifest.xml  The add-in manifest. It tells Outlook where ${NAME}
                         lives and what it may do. It holds no program code.
                         This copy has no connection settings yet (see below).
+  LICENSE.txt           The MIT License, which lets you use, change, and share
+                        ${NAME}. Keep it with any copy you pass on.
   README.txt            This guide.
 
 ${NAME} for Outlook works in Outlook on the web, the new and classic Outlook
@@ -232,7 +243,9 @@ THE EASY WAY
 
 BY HAND
 
-  A Global Administrator who is an Owner of the help desk site does this once.
+  An administrator does this once. A Global Administrator can do every step;
+  the install page lists narrower roles. Whoever creates the lists must be an
+  Owner of the help desk site.
   1. Create a private SharePoint team site for the help desk. Make the help
      desk team Owners of the site. Under the gear, Site permissions, Advanced
      permissions settings, open the Visitors group and add
@@ -260,9 +273,9 @@ BY HAND
      asks you to approve one higher permission, Sites.FullControl.All. Leave
      "Consent on behalf of your organization" unchecked. Then enter your
      organization's name and select "2. Create the help desk".
-     Afterward remove that permission again: in the Microsoft Entra admin
-     center, open Enterprise applications, ${NAME}, Permissions, and the
-     User consent tab.
+     Afterward remove that permission again. The Entra admin center cannot
+     remove one person's consent, so use Graph Explorer as the install page
+     describes: ${SITE_URL}/install/#outlook-revoke
   6. Set who can see what. On the site, under Site contents:
      Help Desk Tickets: in List settings, Advanced settings, Item-level
        Permissions, choose "Read items that were created by the user" and

@@ -16,11 +16,16 @@ export async function run({ check, load }) {
   eq(T.normalizeEmail(" Pat.Lee@Example.COM "), "pat.lee@example.com", "normalizeEmail lowercases");
   for (const bad of ["", "pat", "pat@", "a b@c.d", "<x@y.z>", "a@b", "x@y.z,q@r.s"]) eq(T.normalizeEmail(bad), "", `normalizeEmail rejects ${JSON.stringify(bad)}`);
   for (const f of ["=1+1", "+1", "-1", "@SUM(A1)", "\tx"]) {
-    check(T.sheetSafe(f).startsWith("'"), `sheetSafe guards ${JSON.stringify(f)}`);
+    check(T.sheetSafe(f).startsWith(T.SHEET_GUARD), `sheetSafe guards ${JSON.stringify(f)}`);
     eq(T.sheetRead(T.sheetSafe(f)), f, "sheetRead reverses sheetSafe");
   }
   eq(T.sheetSafe("plain"), "plain", "sheetSafe leaves ordinary text");
-  eq([T.sheetSafe("'Twas fine"), T.sheetRead(T.sheetSafe("'Twas fine"))], ["''Twas fine", "'Twas fine"], "text that starts with an apostrophe keeps it");
+  for (const f of ["'Twas fine", "'=1", "''x", "\u200B=x", "a'b"]) {
+    eq(T.sheetRead(T.sheetSafe(f)), f, "round trip of " + JSON.stringify(f));
+    // Whether Sheets keeps a leading apostrophe or drops it, a guarded value starts with the guard, so it is unaffected.
+    const stored = T.sheetSafe(f);
+    check(!/^['=+\-@]/.test(stored), "what is written never starts with a character Sheets treats specially: " + JSON.stringify(f));
+  }
   check(T.contrast("#FFFFFF", T.buttonColor("#FFCC00")) >= 4.5 && T.buttonColor("#2F4F40") === "#2F4F40", "a button color is darkened only when white text would be hard to read");
   eq(T.sheetSafe(5), 5, "sheetSafe leaves numbers");
   eq(T.safeUrl("javascript:alert(1)"), "", "safeUrl blocks javascript links");
@@ -105,10 +110,34 @@ export async function run({ check, load }) {
   edited.priorities[1].name = "Standard";
   edited.priorities[3].name = "Critical";
   edited.categories[2].name = "Printing";
-  edited.categories.splice(5, 1);
-  edited.categories.push({ name: "Badge reader" });
   const plan = S.renamePlan(before, S.normalizeSettings(edited));
-  eq(plan, { statuses: { Resolved: "Fixed" }, priorities: { Normal: "Standard", Urgent: "Critical" }, categories: { "Printer or scanner": "Printing" }, locations: {} }, "renames are found by position; a removed item and an added one are not a rename");
+  eq(plan, { statuses: { Resolved: "Fixed" }, priorities: { Normal: "Standard", Urgent: "Critical" }, categories: { "Printer or scanner": "Printing" }, locations: {} }, "names changed in place, with nothing else changed, are renames");
+
+  // Anything else changes the shape of the list, and then no rename is guessed.
+  const variant = (change) => {
+    const x = JSON.parse(JSON.stringify(before));
+    change(x);
+    return S.renamePlan(before, S.normalizeSettings(x));
+  };
+  eq(variant((x) => { x.statuses.pop(); x.statuses.push({ name: "Escalated", kind: "open" }); }).statuses, {}, "removing the last status and adding another is not a rename");
+  eq(variant((x) => { x.statuses[4].name = "Archived"; x.statuses[4].kind = "open"; }).statuses, {}, "a status rename that changes the kind is refused, so finished tickets are never reopened");
+  eq(variant((x) => { x.statuses[1].name = "open"; x.statuses[2].name = "Parked"; x.statuses[3].name = "Fixed"; }).statuses, {}, "a merge into another name shifts the list, so nothing is renamed");
+  eq(variant((x) => { x.statuses.splice(2, 1); x.statuses[2].name = "Fixed"; }).statuses, {}, "removing one item and renaming the next is not a rename");
+  eq(variant((x) => { x.priorities.shift(); x.priorities[2].name = "Critical"; }).priorities, {}, "nor is removing the first and renaming another");
+  eq(variant((x) => { const a = x.categories[0]; x.categories[0] = x.categories[1]; x.categories[1] = a; }).categories, {}, "swapping two items is not a rename");
+  eq(variant((x) => { x.categories[0].name = "Computer OR laptop"; }).categories, {}, "a change of capitals only is not a rename");
+
+  // An editor that knows which row became which says so, and only that is used.
+  const moved = JSON.parse(JSON.stringify(before));
+  moved.categories.splice(0, 1);
+  moved.categories[1].name = "Printing";
+  moved.categories.push({ name: "Badge reader" });
+  const told = S.renamePlan(before, S.normalizeSettings(moved), { categories: { "printer or scanner": "printing", "Computer or laptop": "Badge reader", Nope: "X" } });
+  eq(told.categories, { "Printer or scanner": "Printing", "Computer or laptop": "Badge reader" }, "explicit renames are used even when the list changed shape, with the stored spelling");
+  eq(S.renamePlan(before, S.normalizeSettings(moved), {}).categories, {}, "an editor that sends no renames gets none, for example when a preset replaces the lists");
+  const kindChange = JSON.parse(JSON.stringify(before));
+  kindChange.statuses[4] = { name: "Reopened", kind: "open" };
+  eq(S.renamePlan(before, S.normalizeSettings(kindChange), { statuses: { Closed: "Reopened" } }).statuses, {}, "an explicit status rename that changes the kind is refused too");
   const carried = S.normalizeSettings(S.applyRenamesToSettings(edited, plan));
   eq([carried.general.defaultPriority, carried.rules[0].category, carried.rules[0].priority], ["Standard", "Printing", "Critical"], "the default priority and the rules follow a rename");
   const oldTicket = { status: "Resolved", priority: "Urgent", category: "Printer or scanner", location: "Main office", closedAt: "x" };
@@ -116,7 +145,15 @@ export async function run({ check, load }) {
   eq(S.renameOnTicket({ status: "Open", priority: "Low", category: "Something else", location: "" }, plan), null, "a ticket that uses none of the renamed names is left alone");
   eq(S.statusKind(carried, S.renameOnTicket(oldTicket, plan).status), "done", "so a finished ticket stays finished after its status is renamed");
   eq(S.hasRenames(S.renamePlan(before, before)), false, "no change means no renames");
-  eq(S.orphanWarnings(carried, [{ status: "Resolved", priority: "Low", category: "Printing" }, { status: "Resolved", priority: "Low", category: "Printing" }]).length, 1, "tickets left with a name that is off the list are reported");
+  eq(S.orphanWarnings(carried, [{ status: "Resolved", priority: "Low", category: "Printing" }, { status: "resolved", priority: "Low", category: "Printing" }]), ['2 tickets use the status "Resolved", which is not on the list. They count as open until its status is changed or the status is added back.'], "tickets left with a name that is off the list are reported once, whatever the capitals");
+  eq(S.orphanWarnings(carried, [{ status: "Open", priority: "Gone", category: "Printing", location: "Moon" }]), ['1 ticket uses the priority "Gone", which is not on the list. It sorts below every listed priority until the priority is changed or added back.', '1 ticket uses the location "Moon", which is not on the list. Change the location on that ticket, or add it back to the list.'], "one ticket is described in the singular, and a removed location is reported");
+  eq(S.orphanWarnings(S.normalizeSettings(Object.assign({}, carried, { general: Object.assign({}, carried.general, { locationMode: "text" }) })), [{ status: "Open", priority: "Low", category: "Printing", location: "Moon" }]), [], "a location typed freely is not reported");
+  const noCats = S.normalizeSettings({ categories: [{ name: "General", active: false }, { name: "Other", active: false }] });
+  eq(noCats.categories.filter((c) => c.active).map((c) => c.name), ["Other 2"], "the category added when every one is inactive has a name of its own");
+  for (const [typed, days, clean] of [["1-5", "1,2,3,4,5", true], ["1-7", "0,1,2,3,4,5,6", true], ["5-1", "0,1,5,6", true], ["6-0", "0,6", true], ["1\u20135", "1,2,3,4,5", true], ["1 3-5", "1,3,4,5", true], ["10", "1,2,3,4,5", false], ["weekdays", "1,2,3,4,5", false]]) {
+    eq([S.normalizeSettings({ general: { workDays: typed } }).general.workDays, S.parseWorkDays(typed).clean], [days, clean], "working days " + JSON.stringify(typed));
+  }
+  check(S.adjustedFields({ workDays: "10" }, S.normalizeSettings({ general: { workDays: "10" } })).includes("Working days") && !S.adjustedFields({ workDays: "1-7" }, S.normalizeSettings({ general: { workDays: "1-7" } })).length, "working days that could not be read are named, and readable ones are not");
 
   // --- Lists as rows and as text ---------------------------------------------------
   let s = S.defaultSettings("office");
@@ -202,6 +239,17 @@ export async function run({ check, load }) {
   const everyDay = S.normalizeSettings(Object.assign({}, s, { general: Object.assign({}, s.general, { workDays: "0-6" }) }));
   eq(K.computeDue("2026-03-07T23:00:00.000Z", 1, everyDay, ny), "2026-03-08T13:00:00.000Z", "the morning the clocks go forward still opens at the usual local time");
   eq(K.computeDue("2026-10-31T22:00:00.000Z", 1, everyDay, ny), "2026-11-01T14:00:00.000Z", "and the morning they go back");
+  const zoneParts = (tz) => (d) => {
+    const p = {};
+    for (const part of new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", weekday: "short" }).formatToParts(d)) p[part.type] = part.value;
+    return { dow: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(p.weekday), minutes: Number(p.hour) * 60 + Number(p.minute), date: `${p.year}-${p.month}-${p.day}` };
+  };
+  const roundTheClock = S.normalizeSettings(Object.assign({}, s, { general: Object.assign({}, s.general, { workStart: "00:00", workEnd: "24:00" }) }));
+  eq(K.computeDue("2026-03-28T00:00:00.000Z", 1, roundTheClock, zoneParts("Europe/Berlin")), "2026-03-29T23:00:00.000Z", "skipping a 23-hour Sunday still starts Monday at local midnight");
+  eq(K.computeDue("2026-03-07T00:00:00.000Z", 8, roundTheClock, zoneParts("America/New_York")), "2026-03-09T07:00:00.000Z", "the same in New York");
+  const earlyOpen = S.normalizeSettings(Object.assign({}, s, { general: Object.assign({}, s.general, { workStart: "02:30", workDays: "0-6" }) }));
+  eq(K.computeDue("2026-03-07T23:00:00.000Z", 1, earlyOpen, zoneParts("America/New_York")), "2026-03-08T08:00:00.000Z", "an opening time inside the skipped hour opens at the first moment after it");
+  eq(K.computeDue("2026-11-13T12:00:00.000Z", 9, s, zoneParts("Asia/Kathmandu")), "2026-11-16T11:15:00.000Z", "a zone with a quarter-hour offset");
 
   // --- Updating tickets -----------------------------------------------------------------
   const t0 = made.ticket;

@@ -33,7 +33,7 @@ export function bundleCore(entries, options = {}) {
   const owner = new Map();
   const parts = order.map((file) => {
     const name = path.basename(file);
-    let src = fs.readFileSync(file, "utf8");
+    let src = fs.readFileSync(file, "utf8").replace(/\r\n?/g, "\n");
     if (/^export\s+default\b/m.test(src)) throw new Error(`${name}: default exports are not supported by the bundler`);
     if (/^import\s+(?!\{)/m.test(src)) throw new Error(`${name}: only named imports are supported by the bundler`);
     src = src.replace(IMPORT_RE, (all, names, from) => {

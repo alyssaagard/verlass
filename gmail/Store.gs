@@ -4,6 +4,8 @@
  * Everything the help desk knows lives in one Google Sheet: tickets, messages, the activity
  * log, and every setting. This file is the only one that reads or writes that Sheet.
  * The shared rules (what a valid ticket is, who gets it, when it is due) are in Core.gs.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 
 var Store = (function () {
@@ -301,19 +303,40 @@ var Store = (function () {
     var sheet = tab_(TABS.tickets);
     var last = sheet.getLastRow();
     if (last < 2) return 0;
-    var range = sheet.getRange(2, 1, last - 1, TICKET_COLS);
-    var values = range.getValues();
+    // Only Category, Priority, Location, and Status (columns 8 to 11) and the Updated time
+    // (column 3) are written. Rows that do not change get their own values back exactly as read,
+    // so values people typed into other rows or columns by hand are kept. Two writes in all, so
+    // a large sheet stays well inside the add-on's time limit.
+    var ids = sheet.getRange(2, 1, last - 1, 1).getValues();
+    var named = sheet.getRange(2, 8, last - 1, 4);
+    var stamps = sheet.getRange(2, 3, last - 1, 1);
+    var values = named.getValues();
+    var times = stamps.getValues();
+    var now = new Date().toISOString();
     var count = 0;
-    var out = values.map(function (row) {
-      if (text_(row[0]).trim() === "") return safeRow_(row.map(text_));
-      var ticket = rowToTicket_(row);
-      var next = Core.renameOnTicket(ticket, plan);
-      if (next) count++;
-      return safeRow_(ticketToRow_(next || ticket));
-    });
-    if (count) range.setNumberFormat("@").setValues(out);
+    for (var i = 0; i < values.length; i++) {
+      if (text_(ids[i][0]).trim() === "") continue;
+      var c = values[i];
+      var next = [
+        Core.renamed(plan, "categories", text_(c[0])),
+        Core.renamed(plan, "priorities", text_(c[1])),
+        Core.renamed(plan, "locations", text_(c[2])),
+        Core.renamed(plan, "statuses", text_(c[3])),
+      ];
+      if (!next.some(function (v, k) { return v !== text_(c[k]); })) continue;
+      count++;
+      values[i] = safeRow_(next);
+      // A new Updated time tells anyone with the ticket open to look again before saving.
+      times[i] = [now];
+    }
+    if (count) {
+      named.setValues(values);
+      stamps.setValues(times);
+    }
     return count;
   }
+
+
 
   // --- Messages and activity ---------------------------------------------------
 

@@ -132,3 +132,7 @@ details.faq p { margin: 8px 0 0; color: var(--ink-soft); }
 }
 
 .form input::placeholder { color: var(--muted); opacity: 1; }
+
+/* Long code lines scroll inside their box instead of widening the page on a phone. */
+pre { max-width: 100%; overflow-x: auto; }
+.pane-message { padding: 16px; color: var(--muted); }

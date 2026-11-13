@@ -49,7 +49,8 @@ export async function run({ ROOT, check, load }) {
       check(fs.existsSync(resolved), `${name} links to ${target}, which does not exist`);
     }
     // Browsers only accept module addresses that start with ./, ../, /, or a scheme.
-    for (const m of html.matchAll(/\bfrom\s+"([^"]+)"/g)) {
+    for (const m of html.matchAll(/\bfrom\s+"([^"]+)"|\bimport\("([^"]+)"\)/g)) {
+      m[1] = m[1] || m[2];
       check(/^(\.\.?\/|\/|https:)/.test(m[1]), `${name} imports "${m[1]}", which a browser will not resolve`);
       if (/^\.\.?\//.test(m[1])) check(fs.existsSync(path.resolve(path.dirname(page), m[1])), `${name} imports ${m[1]}, which does not exist`);
     }
@@ -57,6 +58,26 @@ export async function run({ ROOT, check, load }) {
     for (const m of html.matchAll(/href="#([^"]+)"/g)) check(new RegExp(`id="${m[1]}"`).test(html), `${name} links to #${m[1]}, which is not on the page`);
     check(!/\bundefined\b|\[object Object\]|NaN/.test(html.replace(/<script[\s\S]*?<\/script>/g, "")), `${name} has no unfilled value in its text`);
     for (const m of html.matchAll(/<img\b[^>]*>/g)) check(/\balt="/.test(m[0]), `${name} has an image without alt text`);
+  }
+
+  // Every browser module must at least parse, including the ones no other test imports.
+  const { execFileSync } = await import("node:child_process");
+  const modules = [];
+  const walkJs = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory() && e.name !== "vendor") walkJs(p);
+      else if (e.name.endsWith(".js")) modules.push(p);
+    }
+  };
+  walkJs(path.join(docs, "app"));
+  modules.push(path.join(docs, "assets/site.js"));
+  for (const file of modules) {
+    try {
+      execFileSync(process.execPath, ["--check", file], { stdio: ["ignore", "ignore", "pipe"] });
+    } catch (e) {
+      check(false, `${path.relative(docs, file)} does not parse: ${String(e.stderr || e.message).split("\n").find((l) => /Error/.test(l)) || ""}`);
+    }
   }
 
   // Cross-page anchors the app and the guides point at.

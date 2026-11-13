@@ -142,6 +142,21 @@
       moveDown.click();
       check(document.activeElement && document.activeElement.getAttribute("data-tool") === "down" && document.activeElement.getAttribute("aria-label") === "Move Open down", "moving an item keeps the keyboard focus on it, and the button names the item", document.activeElement && document.activeElement.getAttribute("aria-label"));
       all('.item [data-tool="up"]')[1].click();
+      // Removing the last category and adding a new one renames nothing.
+      await click(".chip", "Categories");
+      const catsBefore = all('.item [name="name"]').map((el) => el.value);
+      const removeButtons = all('.item [data-tool="remove"]');
+      removeButtons[removeButtons.length - 1].click();
+      await click("button", "Add");
+      all('.item:last-child [name="name"]')[0].value = "Kiosk";
+      await click("button", "Save categories");
+      const lastToast = () => { const t = all(".toasts .toast"); return t.length ? t[t.length - 1].textContent : ""; };
+      check(lastToast() === "Saved." && all('.item [name="name"]').map((el) => el.value).join() === catsBefore.slice(0, -1).concat(["Kiosk"]).join(), "removing the last category and adding another renames nothing", lastToast());
+      const newRowRemove = all('.item:last-child [data-tool="remove"]')[0];
+      check(newRowRemove.getAttribute("aria-label") === "Remove Kiosk", "a row's buttons name the row", newRowRemove.getAttribute("aria-label"));
+      await click("button", "Add");
+      all('.item:last-child [name="name"]')[0].value = "Badge reader";
+      await click("button", "Save categories");
       await click(".chip", "Assignment rules");
       await click("button", "Add");
       const last = (name) => all(`.item:last-child [name="${name}"]`)[0];

@@ -16,6 +16,10 @@ Outlook users get the new version automatically, because Outlook loads Verlass f
 
 The site is published from the `main` branch, `/docs` folder (Settings, Pages).
 
+Also turn on private vulnerability reporting (Settings, Code security, Private vulnerability reporting), which SECURITY.md tells people to use.
+
+GitHub Pages lets browsers keep each file for about ten minutes, and the pages load several script files. Right after a release, someone can briefly get a mix of old and new files; the app and the demo then show "could not load" with a reload hint instead of an empty panel. Avoid releases that rename an export used across files while people are working, or wait for the ten minutes before announcing them.
+
 The permanent address is `https://verlass.alyssaagard.dev`. The Outlook manifest, every organization's app registration, and the Gmail add-on's icon contain this address, so it should not change once people install Verlass. To connect it:
 
 1. At Namecheap (the DNS host for alyssaagard.dev), open Domain List, Manage, then Advanced DNS, and add a record:
@@ -68,7 +72,7 @@ Outlook (needs a Microsoft 365 tenant where you are an administrator; the Micros
 
 1. Follow the Outlook install exactly as written: site, app registration, manifest, setup in the browser app, list permissions, deployment.
 2. In the browser app: sign-in works, **1. Create the lists** grants the add-in access and creates three lists, **2. Create the help desk** saves the settings.
-3. After the list permissions step, a requester sees only their own tickets, the team (site Owners on the Team list) sees all, and a requester cannot open the Help Desk Notes list. This confirms that Microsoft Graph honors SharePoint's item-level permissions for signed-in people, which Microsoft's documentation does not state outright.
+3. After the list permissions step, a requester sees only their own tickets, the team (site Owners on the Team list) sees all, and a requester cannot open the Help Desk Notes list. This confirms that Microsoft Graph honors SharePoint's item-level permissions for signed-in people, which Microsoft's documentation does not state outright. It also confirms that the add-in's site grant (`fullcontrol`, given in setup) lets Owners see every ticket; with a lower grant they could see only their own. Check the grant in Graph Explorer with `GET https://graph.microsoft.com/v1.0/sites/{site-id}/permissions`.
 4. In Outlook on the web, new Outlook for Windows, classic Outlook for Windows, Outlook for Mac, and Outlook on a phone: the button appears on an open message, the panel opens and signs in without asking again, **Create from the open email** fills the form, and pinning keeps the panel open on the desktop clients.
 5. On a client old enough to lack nested app authentication, the sign-in dialog opens and returns.
 6. Email notices arrive, sent from the acting person's mailbox. With the manifest option "Do not send email", none are sent.
@@ -104,4 +108,4 @@ Today each organization registers its own app in Microsoft Entra, which needs no
 
 ## The old repository
 
-`organization-it-helpdesk` has a README that points here. Archive it (Settings, General, Archive this repository) only when you are ready; an archived repository is read-only but stays visible, and it can be unarchived.
+Replace the README of `organization-it-helpdesk` with a short note that says the project is now Verlass and links to https://github.com/alyssaagard/verlass and https://verlass.alyssaagard.dev, and set that repository's website field to the new site. Archive it (Settings, General, Archive this repository) only after the note is in place and only when you are ready; an archived repository is read-only but stays visible, and it can be unarchived.

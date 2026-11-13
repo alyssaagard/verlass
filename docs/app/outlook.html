@@ -18,8 +18,18 @@
   <div id="app"><p style="padding:16px;color:#9DAAA2;font-family:sans-serif">Loading Verlass...</p></div>
   <noscript><p style="padding:16px">Verlass needs JavaScript.</p></noscript>
   <script type="module">
-    import { startM365 } from "./hosts/m365.js";
-    startM365(document.getElementById("app"), { kind: "outlook", name: "Verlass", siteUrl: new URL("..", window.location.href).href.replace(/\/$/, "") });
+    // A failure to load or start shows a message instead of "Loading" forever.
+    const root = document.getElementById("app");
+    const failed = () => {
+      root.textContent = "";
+      const p = document.createElement("p");
+      p.style.padding = "16px";
+      p.textContent = "Verlass could not load. Close this panel and open it again in a minute.";
+      root.appendChild(p);
+    };
+    import("./hosts/m365.js")
+      .then((m) => m.startM365(root, { kind: "outlook", name: "Verlass", siteUrl: new URL("..", window.location.href).href.replace(/\/$/, "") }))
+      .catch(failed);
   </script>
 </body>
 </html>

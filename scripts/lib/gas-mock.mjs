@@ -365,7 +365,8 @@ export function makeProject(options) {
     LockService: { getScriptLock: () => ({ tryLock: () => true, waitLock: () => {}, releaseLock: () => {} }) },
     Session: {
       getActiveUser: () => ({ getEmail: () => (use("Session"), project.effectiveUser ? "" : currentUser()) }),
-      getEffectiveUser: () => ({ getEmail: () => (use("Session"), project.effectiveUser || currentUser()) }),
+      // Google can return an empty address here (for example under some account policies); effectiveEmpty simulates that.
+      getEffectiveUser: () => ({ getEmail: () => (use("Session"), options.effectiveEmpty ? "" : project.effectiveUser || currentUser()) }),
       getScriptTimeZone: () => options.timeZone || "America/New_York",
     },
     ScriptApp: {

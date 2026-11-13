@@ -46,7 +46,7 @@
       <h2>Where your information is kept</h2>
       <ul>
         <li><strong>Gmail.</strong> Tickets, messages, the activity log, and settings are rows in one Google Sheet in the Google Drive of the person or account that set up the help desk. The add-on is Apps Script code that you copy into your own Google account and that runs there. Email notices are sent by Google: from your own account in a Standard install, and from the help desk owner's account in a Private install.</li>
-        <li><strong>Outlook.</strong> Tickets, notes, and settings are items in three lists on a SharePoint site in your organization's Microsoft 365. The add-in's code is loaded from this website each time it opens, runs in Outlook on your device, and talks only to Microsoft Graph, as you. Email notices are sent from your own mailbox. The add-in's address includes your organization's application ID, tenant ID, and site address, which GitHub, as this site's host, can see. An organization that prefers can host its own copy of the site; the code is public.</li>
+        <li><strong>Outlook.</strong> Tickets, notes, and settings are items in three lists on a SharePoint site in your organization's Microsoft 365. The add-in's code is loaded from this website each time it opens, runs in Outlook on your device, and talks only to Microsoft's sign-in service and to Microsoft Graph, as you. Email notices are sent from your own mailbox. The add-in's address includes your organization's application ID, tenant ID, and site address, which GitHub, as this site's host, can see. An organization that prefers can host its own copy of the site; the code is public.</li>
         <li><strong>The demo.</strong> The sample help desk on this site lives in your browser tab and is erased when you close it.</li>
       </ul>
       <p>Who can read a ticket is decided by your own Google or Microsoft 365 permissions, as described in the <a href="../install/">install guide</a>. Your organization's own privacy rules apply to what people write in tickets.</p>
@@ -65,7 +65,8 @@
       <h2>This website</h2>
       <ul>
         <li>The site and the Outlook add-in's pages are static files hosted on GitHub Pages. GitHub, as the host, receives the usual technical information any web server sees, such as your IP address. See <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's privacy statement</a>.</li>
-        <li>The site sets no cookies. It remembers two things in your browser's own storage: your theme choice, and, for the browser version of the Outlook help desk, your organization's connection settings. Signing in to Microsoft 365 stores Microsoft's sign-in tokens in your browser. None of this is sent to Verlass's publisher.</li>
+        <li>The site sets no cookies. It keeps a few things in your browser's own storage: your theme choice; for the Outlook add-in and the browser app, your organization's connection settings; while the older Outlook sign-in window is open, its settings and your email address, for that window only; and, in the live demo, the sample help desk for that tab. Signing in to Microsoft 365 stores Microsoft's sign-in tokens in your browser. None of this is sent to Verlass's publisher.</li>
+        <li>If your organization sets a logo address, the logo is loaded from the server that address names, which sees your IP address as any web server does.</li>
         <li>Fonts and Microsoft's sign-in library are served from this site. The Outlook pages load Microsoft's Office script from Microsoft.</li>
       </ul>
 

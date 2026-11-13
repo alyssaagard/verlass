@@ -34,6 +34,11 @@ Fixed from the old add-on
 - Lists stopped at 25 tickets. Every list is paged.
 - Two people saving the same ticket could silently overwrite each other. The second is now asked to open the ticket again.
 
+Checked again before release
+
+- A second review of the rebuilt code found and fixed these: renames are now applied only when it is certain which item became which, so removing one item and adding another never relabels tickets, and a status can never change kind by a rename; renaming writes only the renamed fields and keeps colleagues' changes; working days such as 1-7 or 5-1 are read correctly or reported; due times stay right on the days clocks change; a lost answer from Microsoft 365 no longer looks like someone else's change; signing in again keeps what you typed; the Outlook setup permission is kept out of browser storage; the Gmail domain check accepts an organization's secondary domains; and text that starts with an apostrophe or an equals sign is stored safely however Google Sheets treats it.
+- Every source file and download package now carries the copyright and MIT License notice.
+
 Not yet tested in a live account
 
 - The automated tests run the real code against simulated Google and Microsoft services and drive the screens in headless Chrome. Verlass has not yet been run in a live Gmail account or a live Microsoft 365 tenant. See "Real-world tests" in MAINTAINING.md.

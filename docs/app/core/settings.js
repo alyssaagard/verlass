@@ -4,6 +4,8 @@
  *
  * Nothing here assumes one kind of organization. Categories, priorities, statuses, locations,
  * the team, assignment rules, working hours, email wording, and branding are all data.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 import { clean, cleanLine, normalizeEmail, sameLabel, hexColor, safeUrl } from "./text.js";
 
@@ -44,14 +46,14 @@ export const GENERAL_FIELDS = [
   { key: "workStart", label: "Working day starts", group: "Hours", type: "time", value: "08:00", help: "24-hour time, such as 08:00." },
   { key: "workEnd", label: "Working day ends", group: "Hours", type: "time", value: "17:00", help: "24-hour time, such as 17:00." },
   { key: "holidays", label: "Days off", group: "Hours", type: "text", max: 2000, value: "", help: "Dates as YYYY-MM-DD separated by commas." },
-  { key: "timeZone", label: "Time zone", group: "Hours", type: "text", max: 60, value: "", help: "For example America/New_York. Leave empty to use the help desk's own time zone." },
+  { key: "timeZone", label: "Time zone", group: "Hours", type: "text", max: 60, value: "", help: "For example America/New_York or Europe/Berlin. Set it so that due times are counted the same way for everyone." },
 
   { key: "notifyRequesterOnCreate", label: "Email the requester when a ticket is created", group: "Email", type: "bool", value: true, help: "" },
   { key: "notifyTeamOnCreate", label: "Email the team about new tickets", group: "Email", type: "choice", options: ["assignee", "all", "none"], value: "assignee", help: "assignee: the person the ticket is assigned to, or everyone when it is unassigned. all: everyone on the team. none: no email." },
   { key: "notifyAssigneeOnAssign", label: "Email a person when a ticket is assigned to them", group: "Email", type: "bool", value: true, help: "" },
   { key: "notifyRequesterOnStatus", label: "Email the requester when the status changes", group: "Email", type: "bool", value: true, help: "Each status can also turn this off for itself." },
   { key: "notifyRequesterOnReply", label: "Email the requester when the team replies", group: "Email", type: "bool", value: true, help: "" },
-  { key: "notifyTeamOnRequesterReply", label: "Email the team when the requester replies", group: "Email", type: "bool", value: true, help: "" },
+  { key: "notifyTeamOnRequesterReply", label: "Email the team when the requester replies", group: "Email", type: "bool", value: true, help: "A requester who closes or reopens a ticket without a message also sends this email." },
 ];
 
 /** The email templates. Subjects and bodies are plain text with {{placeholders}}. */
@@ -64,7 +66,7 @@ export const TEMPLATE_INFO = {
   status: "To the requester when the status changes",
   resolved: "To the requester when the ticket is resolved or closed",
   reply: "To the requester when the team replies",
-  requesterReply: "To the team when the requester replies",
+  requesterReply: "To the team when the requester replies, closes, or reopens a ticket",
 };
 
 /** Placeholders a template may use. */
@@ -100,8 +102,8 @@ export const DEFAULT_TEMPLATES = {
     body: "Hello {{requester.name}},\n\n{{actor.name}} replied to your {{ticket.word}} {{ticket.id}}:\n\n{{message}}\n\n{{desk.name}}",
   },
   requesterReply: {
-    subject: "[{{ticket.id}}] {{requester.name}} replied: {{ticket.subject}}",
-    body: "{{requester.name}} ({{requester.email}}) replied to {{ticket.id}}:\n\n{{message}}",
+    subject: "[{{ticket.id}}] {{requester.name}} wrote: {{ticket.subject}}",
+    body: "{{requester.name}} ({{requester.email}}) wrote about {{ticket.id}}:\n\n{{message}}",
   },
 };
 
@@ -219,6 +221,36 @@ export function timeToMinutes(time) {
   return m ? Number(m[1]) * 60 + Number(m[2]) : 0;
 }
 
+/**
+ * Working days as day numbers: Sunday 0, Monday 1, through Saturday 6. Accepts commas or spaces
+ * between days and ranges such as 1-5. A range may wrap past Saturday (5-1 is Friday to Monday),
+ * and 7 means Sunday, as in the ISO numbering where Monday is 1. Returns { days, clean }; clean is
+ * false when any part could not be read, so the administrator can be told.
+ */
+export function parseWorkDays(text) {
+  const days = [];
+  let clean = true;
+  const parts = String(text === null || text === undefined ? "" : text).replace(/[\u2010-\u2015\u2212]/g, "-").split(/[\s,;]+/).filter(Boolean);
+  const day = (s) => (/^[0-7]$/.test(s) ? Number(s) % 7 : -1);
+  for (const part of parts) {
+    const m = /^(\d+)-(\d+)$/.exec(part);
+    if (m) {
+      const from = day(m[1]);
+      const to = day(m[2]);
+      if (from < 0 || to < 0) {
+        clean = false;
+        continue;
+      }
+      for (let d = from, n = 0; n < 7; d = (d + 1) % 7, n++) {
+        days.push(d);
+        if (d === to) break;
+      }
+    } else if (day(part) >= 0) days.push(day(part));
+    else clean = false;
+  }
+  return { days: Array.from(new Set(days)).sort(), clean: clean && days.length > 0 };
+}
+
 /** "www.example.org" becomes "https://www.example.org"; anything with a scheme is left alone. */
 function withScheme(value) {
   const s = String(value === null || value === undefined ? "" : value).trim();
@@ -260,15 +292,8 @@ function normalizeGeneral(raw) {
   out.ticketPrefix = out.ticketPrefix.replace(/[^A-Za-z0-9#_.-]/g, "");
   // A prefix that ends in a digit would run into the ticket number, so it gets a hyphen.
   if (/\d$/.test(out.ticketPrefix)) out.ticketPrefix = out.ticketPrefix.slice(0, 7) + "-";
-  // Day numbers, with ranges such as 1-5 written out.
-  const days = [];
-  String(out.workDays).replace(/(\d)\s*-\s*(\d)|(\d)/g, (all, from, to, single) => {
-    if (single !== undefined) days.push(Number(single));
-    else for (let d = Number(from); d <= Number(to); d++) days.push(d);
-    return all;
-  });
-  for (let i = days.length - 1; i >= 0; i--) if (days[i] > 6) days.splice(i, 1);
-  out.workDays = (days.length ? Array.from(new Set(days)).sort() : [1, 2, 3, 4, 5]).join(",");
+  const parsed = parseWorkDays(out.workDays);
+  out.workDays = (parsed.days.length ? parsed.days : [1, 2, 3, 4, 5]).join(",");
   if (timeToMinutes(out.workEnd) <= timeToMinutes(out.workStart)) {
     out.workStart = "08:00";
     out.workEnd = "17:00";
@@ -335,7 +360,7 @@ export function normalizeSettings(raw) {
     }),
     (c) => c.name
   );
-  if (!categories.some((c) => c.active)) categories = categories.concat([{ name: categories.some((c) => sameLabel(c.name, "General")) ? "Other" : "General", assignTo: "", priority: "", active: true }]);
+  if (!categories.some((c) => c.active)) categories = categories.concat([{ name: freeName(categories, ["General", "Other"]), assignTo: "", priority: "", active: true }]);
 
   const locations = uniqueByLabel(asList(src.locations).map((l) => label(typeof l === "string" ? l : l && l.name, 80)), (l) => l);
 
@@ -391,7 +416,7 @@ export function settingsWarnings(settings) {
   if (s.general.assignFallback === "roundRobin" && !agents.length) out.push("Round robin assignment is on, but the team list has no active members.");
   if (s.general.locationMode === "list" && !s.locations.length) out.push("The location field uses a list, but the locations list is empty.");
   if (s.general.timeZone && !/^(UTC|GMT|[A-Za-z_]+\/[A-Za-z0-9_+\-\/]+)$/.test(s.general.timeZone)) out.push(`The time zone "${s.general.timeZone}" does not look like a zone name such as America/New_York or Europe/Berlin.`);
-  if (!s.general.timeZone) out.push("No time zone is set, so due times follow each person's own device. Set the time zone under Hours.");
+  if (!s.general.timeZone) out.push("No time zone is set, so due times may not follow the zone you expect. Set the time zone under Hours.");
   for (const key of TEMPLATE_KEYS) {
     const text = s.templates[key].subject + " " + s.templates[key].body;
     const re = /\{\{\s*([^}]*?)\s*\}\}/g;
@@ -489,7 +514,7 @@ export function adjustedFields(input, saved) {
     else if (f.type === "choice") unusable = !f.options.includes(typed);
     else if (f.type === "time") unusable = toTime(typed, "") !== kept;
     else if (f.key === "defaultPriority" || f.key === "ticketPrefix") unusable = typed.toLowerCase() !== String(kept).toLowerCase();
-    else if (f.key === "workDays") unusable = !/[0-6]/.test(typed);
+    else if (f.key === "workDays") unusable = !parseWorkDays(typed).clean;
     else if (f.key === "holidays") unusable = typed.split(/[\s,;]+/).filter(Boolean).some((d) => !/^\d{4}-\d{2}-\d{2}$/.test(d));
     else unusable = cleanLine(typed).length > (f.max || Infinity);
     if (unusable) out.push(f.label);
@@ -500,23 +525,55 @@ export function adjustedFields(input, saved) {
 const RENAMABLE = ["statuses", "priorities", "categories", "locations"];
 const nameOf = (item) => (typeof item === "string" ? item : (item && item.name) || "");
 
+const kindOf = (item) => (item && typeof item === "object" ? item.kind : "");
+
 /**
- * Finds list items that were renamed in place: the item at the same position has a name that
- * is new, and the old name is gone. Returns { statuses: { old: new }, priorities, categories,
- * locations }. Tickets store these names, so the hosts use the plan to rename them on tickets
- * too; otherwise a renamed status would leave its old tickets without a known status.
+ * Finds list items that were renamed. Returns { statuses: { old: new }, priorities,
+ * categories, locations }. Tickets store these names, so the hosts use the plan to rename them
+ * on tickets too; otherwise a renamed status would leave its old tickets without a known status.
+ *
+ * explicit, when given, is { listId: { oldName: newName } } from an editor that knows which row
+ * became which (the web settings screen). Only those renames are used, and only when the old
+ * name is gone, the new name is on the list, and, for statuses, the kind is unchanged. A list
+ * that explicit does not name gets no renames.
+ *
+ * Without explicit (the Gmail text editor, which has no rows to follow), a rename is read from
+ * positions, and only when nothing else in the list changed: the same number of items, and each
+ * item either keeps its name or takes a name that is new while its old name is gone. Anything
+ * else (an item removed, added, merged, or moved) means no renames for that list, because the
+ * pairing would be a guess. A status rename also needs the kind to stay the same, so a rename can
+ * never reopen finished tickets or finish open ones.
  */
-export function renamePlan(before, after) {
+export function renamePlan(before, after, explicit) {
   const plan = {};
   for (const id of RENAMABLE) {
     plan[id] = {};
-    const a = (before[id] || []).map(nameOf);
-    const b = (after[id] || []).map(nameOf);
-    a.forEach((name, i) => {
-      const gone = !b.some((n) => sameLabel(n, name));
-      const now = b[i];
-      if (name && gone && now && !a.some((n) => sameLabel(n, now))) plan[id][name] = now;
-    });
+    const A = before[id] || [];
+    const B = after[id] || [];
+    const a = A.map(nameOf);
+    const b = B.map(nameOf);
+    const isOld = (n) => a.some((x) => sameLabel(x, n));
+    const isNew = (n) => b.some((x) => sameLabel(x, n));
+    const sameKind = (from, to) => id !== "statuses" || kindOf(A[a.findIndex((x) => sameLabel(x, from))]) === kindOf(B[b.findIndex((x) => sameLabel(x, to))]);
+    if (explicit) {
+      const wanted = explicit[id] || {};
+      for (const from of Object.keys(wanted)) {
+        const to = wanted[from];
+        if (from && to && !sameLabel(from, to) && isOld(from) && !isNew(from) && isNew(to) && sameKind(from, to)) {
+          plan[id][a.find((x) => sameLabel(x, from))] = b.find((x) => sameLabel(x, to));
+        }
+      }
+      continue;
+    }
+    if (a.length !== b.length) continue;
+    const pairs = [];
+    let clean = true;
+    for (let i = 0; i < a.length && clean; i++) {
+      if (sameLabel(a[i], b[i])) continue;
+      if (!isNew(a[i]) && !isOld(b[i]) && a[i] && b[i] && sameKind(a[i], b[i])) pairs.push([a[i], b[i]]);
+      else clean = false;
+    }
+    if (clean) for (const [from, to] of pairs) plan[id][from] = to;
   }
   return plan;
 }
@@ -564,13 +621,24 @@ export function orphanWarnings(settings, tickets) {
     const known = (settings[id] || []).map(nameOf);
     const counts = {};
     for (const t of tickets) {
-      const v = t[field];
-      if (v && !known.some((n) => sameLabel(n, v))) counts[v] = (counts[v] || 0) + 1;
+      const v = String(t[field] || "").trim();
+      if (!v || known.some((n) => sameLabel(n, v))) continue;
+      const key = v.toLowerCase();
+      counts[key] = { name: counts[key] ? counts[key].name : v, n: (counts[key] ? counts[key].n : 0) + 1 };
     }
-    for (const v of Object.keys(counts)) out.push(`${counts[v]} ${counts[v] === 1 ? "ticket uses" : "tickets use"} the ${what} "${v}", which is not on the list. ${consequence}`);
+    for (const key of Object.keys(counts)) {
+      const c = counts[key];
+      const one = c.n === 1;
+      out.push(`${c.n} ${one ? "ticket uses" : "tickets use"} the ${what} "${c.name}", which is not on the list. ${consequence(one)}`);
+    }
   };
-  check("statuses", "status", "status", "They count as open until their status is changed.");
-  check("priorities", "priority", "priority", "They sort below every listed priority.");
-  check("categories", "category", "category", "They keep the old name.");
+  check("statuses", "status", "status", (one) => (one ? "It counts" : "They count") + " as open until its status is changed or the status is added back.");
+  check("priorities", "priority", "priority", (one) => (one ? "It sorts" : "They sort") + " below every listed priority until the priority is changed or added back.");
+  check("categories", "category", "category", (one) => "Change the category on " + (one ? "that ticket" : "those tickets") + ", or add it back to the list.");
+  // Locations typed freely are not on any list, so only a location list is checked.
+  if (settings.general && settings.general.locationMode === "list") {
+    const label = String(settings.general.locationLabel || "location").toLowerCase();
+    check("locations", "location", label, (one) => "Change the " + label + " on " + (one ? "that ticket" : "those tickets") + ", or add it back to the list.");
+  }
   return out;
 }

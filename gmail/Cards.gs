@@ -3,6 +3,8 @@
  *
  * Cards never touch the spreadsheet. They ask the help desk through Api.call and draw what
  * comes back. Every piece of text a person typed is escaped before it is shown.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 
 var Cards = (function () {
@@ -30,11 +32,13 @@ var Cards = (function () {
   }
 
   /**
-   * The person's role, the settings, and the counts. When the Time zone setting is empty, the
-   * help desk's own zone is filled in, so cards show and read times the way the service does.
+   * The person's role, the settings, and the counts. The zone the service actually uses is put
+   * in place of the setting, so cards show and read times exactly the way the service does, even
+   * when the setting is empty or names a zone that does not exist. Only these display copies are
+   * changed; the stored settings are not.
    */
   function prepare_(boot) {
-    if (boot && boot.ready && boot.settings && boot.settings.general && !boot.settings.general.timeZone && boot.zone) boot.settings.general.timeZone = boot.zone;
+    if (boot && boot.ready && boot.settings && boot.settings.general && boot.zone) boot.settings.general.timeZone = boot.zone;
     return boot;
   }
 
@@ -228,9 +232,18 @@ var Cards = (function () {
     Object.keys(values).forEach(function (k) { sent[k] = values[k]; });
     sent.withBoot = true;
     var result = Api.call("create", sent);
-    var boot = result.boot ? prepare_(result.boot) : boot_();
     if (!result.ok) {
-      return Ui.replace(formCard(e, boot, values, result.errors || ["The " + boot.settings.general.ticketWord + " could not be sent."]));
+      var again = result.boot ? prepare_(result.boot) : boot_();
+      return Ui.replace(formCard(e, again, values, result.errors || ["The " + again.settings.general.ticketWord + " could not be sent."]));
+    }
+    // The ticket is saved. Whatever happens while drawing the next card, never ask for it again.
+    var boot = result.boot ? prepare_(result.boot) : null;
+    if (!boot) {
+      try {
+        boot = boot_();
+      } catch (err) {
+        return Ui.notify(result.ticket.id + " was sent.");
+      }
     }
     var card = detailCard(result.ticket.id, boot, result);
     return CardService.newActionResponseBuilder()
