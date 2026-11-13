@@ -34,3 +34,20 @@ jobs:
           git diff --exit-code -- gmail/Core.gs gmail/appsscript.json docs
       - name: Run checks
         run: npm run check
+
+  # The headless Chrome scenario, run separately so a problem there is visible but does not
+  # block the main check. Failures appear as annotations on the run's page.
+  browser:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Chrome version
+        run: google-chrome --version || true
+      - name: Browser scenario
+        env:
+          VERLASS_UI: "1"
+        run: node scripts/check.mjs --only=ui
