@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Install | Verlass</title>
+  <meta name="description" content="Install Verlass for Gmail or Outlook: download packages and step by step guides for one person, a team, a school, a business, or a whole organization.">
+  <meta name="author" content="Alyssa I. Agard">
+  <meta property="og:title" content="Install | Verlass">
+  <meta property="og:description" content="Install Verlass for Gmail or Outlook: download packages and step by step guides for one person, a team, a school, a business, or a whole organization.">
+  <meta property="og:image" content="https://verlass.alyssaagard.dev/assets/brand/verlass-social.png">
+  <meta property="og:url" content="https://verlass.alyssaagard.dev/install/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#141C18">
+  <link rel="canonical" href="https://verlass.alyssaagard.dev/install/">
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <script>(function(){var d=document.documentElement;try{var c=localStorage.getItem("helpdesk.theme");if(c!=="light"&&c!=="system")c="dark";var l=c==="light"||(c==="system"&&window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches);d.setAttribute("data-theme",l?"light":"dark");d.setAttribute("data-theme-choice",c)}catch(e){d.setAttribute("data-theme","dark")}})();</script>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body class="site">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-head">
+    <div class="wrap">
+      <a class="brand" href="../" aria-label="Verlass home"><img src="../assets/brand/verlass-mark.svg" alt="" width="32" height="32"><span>Verlass</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="../demo/">Demo</a>
+        <a href="../install/" aria-current="page">Install</a>
+        <a href="../help/">Help</a>
+        <a href="https://github.com/alyssaagard/verlass">GitHub</a>
+        <span class="theme-pick" role="group" aria-label="Theme">
+          <button type="button" data-theme="dark">Dark</button><button type="button" data-theme="light">Light</button><button type="button" data-theme="system">System</button>
+        </span>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    <p class="kicker" style="margin-top:44px">Install</p>
+    <h1 class="page-title" style="margin-top:0">Add Verlass to your email</h1>
+    <p class="lead">Verlass is free for personal, commercial, school, and enterprise use. It has no server of its own: everything runs in your own Google or Microsoft 365 account. Choose where your organization keeps its mail.</p>
+
+    <div class="tabs" role="tablist" aria-label="Where your mail lives">
+      <button type="button" role="tab" aria-controls="gmail" data-hash="gmail">Gmail and Google Workspace</button>
+      <button type="button" role="tab" aria-controls="outlook" data-hash="outlook">Outlook and Microsoft 365</button>
+    </div>
+
+    <section class="tab-panel" id="gmail" role="tabpanel">
+      <h2 style="margin-top:8px">Gmail</h2>
+      <p class="prose">Verlass for Gmail is a Google Workspace add-on written in Google Apps Script. Tickets and settings are rows in one Google Sheet in your own Drive. It works with Google Workspace accounts and with free Gmail accounts.</p>
+      <p class="notice"><strong>New in version 2.0.0.</strong> The Gmail add-on has been tested against a simulated Gmail and Google Sheets, and has not yet been run in a live Google account. Try it with a few people first, and please <a href="https://github.com/alyssaagard/verlass/issues">report what you find</a>.</p>
+
+      <h3>Choose an install</h3>
+      <div class="table-wrap"><table class="plain">
+        <thead><tr><th></th><th>Standard</th><th>Private</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Best for</strong></td><td>One person, a household, or a small team that trusts each other</td><td>Businesses, schools, and any organization</td></tr>
+          <tr><td><strong>Setup</strong></td><td>One Apps Script project</td><td>Two Apps Script projects</td></tr>
+          <tr><td><strong>The Google Sheet</strong></td><td>Shared with everyone who uses the help desk, so a person could open it and read every ticket</td><td>Shared with no one but the help desk's owner. People see only their own requests.</td></tr>
+          <tr><td><strong>Permissions staff approve</strong></td><td>Run in Gmail, know your email address, read and write spreadsheets, send email as you</td><td>Run in Gmail, know your email address, connect to the help desk service</td></tr>
+          <tr><td><strong>Email comes from</strong></td><td>The person who acted</td><td>The help desk owner's account, for example helpdesk@your-domain</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="file-row"><div class="grow"><code>verlass-gmail.zip</code><br><span class="muted small">Standard install: six script files, the manifest, and a guide</span></div><a class="btn btn-primary" href="../download/verlass-gmail.zip" download>Download</a></div>
+      <div class="file-row"><div class="grow"><code>verlass-gmail-private.zip</code><br><span class="muted small">Private install: a service folder, an add-on folder, and a guide</span></div><a class="btn btn-primary" href="../download/verlass-gmail-private.zip" download>Download</a></div>
+
+      <h3 id="gmail-standard">Standard install</h3>
+      <ol class="steps">
+        <li>Download <code>verlass-gmail.zip</code> and unzip it.</li>
+        <li>Go to <a href="https://script.google.com">script.google.com</a>, select <strong>New project</strong>, and rename the project <strong>Verlass</strong>.</li>
+        <li>Select <strong>Project Settings</strong> (the gear) and check <strong>Show "appsscript.json" manifest file in editor</strong>.</li>
+        <li>Go back to the <strong>Editor</strong>. For each of <code>Addon</code>, <code>Cards</code>, <code>Core</code>, <code>Service</code>, <code>SettingsCards</code>, and <code>Store</code>: select the plus sign next to Files, choose <strong>Script</strong>, type the name, and replace everything in the new file with the contents of the matching <code>.gs</code> file from the package. Then delete the starter file <code>Code.gs</code>.</li>
+        <li>Open <code>appsscript.json</code> and replace everything in it with the package's <code>appsscript.json</code>. If you are not in the US Eastern time zone, change <code>America/New_York</code> to yours, for example <code>Europe/Berlin</code>. Save.</li>
+        <li>Select <strong>Deploy</strong>, then <strong>Test deployments</strong>, then <strong>Install</strong>, then <strong>Done</strong>.</li>
+        <li>Open Gmail and reload it. Select the Verlass icon in the panel on the right, select <strong>Authorize access</strong>, and approve the permissions. With a free Gmail account, Google first says that it has not verified this app, because the project is your own. Select <strong>Advanced</strong>, then <strong>Go to Verlass (unsafe)</strong>.</li>
+        <li>Enter your organization's name, choose a starting set of lists, and select <strong>Create the help desk</strong>. Verlass creates the Google Sheet in your Drive and makes you the first administrator.</li>
+        <li>Open <strong>Settings</strong>, then <strong>Team</strong>, and add the people who will work on tickets. Then select <strong>Open the spreadsheet</strong> and share the Sheet, as Editor, with everyone who will use the help desk. A Google group makes this one step.</li>
+      </ol>
+      <p class="callout"><strong>Other people</strong>A test deployment is installed per person, and Google lets a person install it only if they can edit the project. In Google Workspace they must also belong to the owner's organization. Anyone who can edit the project can change what it does, so share it only with people you would trust as administrators, and have each one select Deploy, Test deployments, and Install. For everyone else, publish the add-on for your organization (below). Sharing between free Gmail accounts has not been tested.</p>
+
+      <h3 id="gmail-private">Private install</h3>
+      <p class="prose">The Private install splits Verlass in two. A small <strong>service</strong> project owns the Sheet and runs as one account, ideally a shared one such as helpdesk@your-domain. The <strong>add-on</strong> project is what people install. It proves who each person is with a Google sign-in token, and the service answers only for that person.</p>
+      <ol class="steps">
+        <li>Download <code>verlass-gmail-private.zip</code> and unzip it. Sign in to Google as the account that should own the help desk.</li>
+        <li><strong>The service.</strong> At <a href="https://script.google.com">script.google.com</a> create a project named <strong>Verlass service</strong>. Show the manifest file as in the Standard install, add the script files <code>Core</code>, <code>Service</code>, and <code>Store</code> from the package's <code>service</code> folder, delete <code>Code.gs</code>, and replace <code>appsscript.json</code> with the one in that folder.</li>
+        <li>Select <strong>Deploy</strong>, then <strong>New deployment</strong>. Choose the type <strong>Web app</strong>, set <strong>Execute as</strong> to <strong>Me</strong> and <strong>Who has access</strong> to <strong>Anyone</strong>, and select <strong>Deploy</strong>. Approve the permissions, then copy the <strong>Web app URL</strong>. It ends in <code>/exec</code>.</li>
+        <li>Recommended: in <strong>Project Settings</strong>, under <strong>Script properties</strong>, add a property named <code>ALLOWED_DOMAIN</code> with your domain, for example <code>example.org</code>. The service then refuses accounts from anywhere else.</li>
+        <li><strong>The add-on.</strong> Create a second project named <strong>Verlass</strong>. Add the script files <code>Addon</code>, <code>Cards</code>, <code>Core</code>, and <code>SettingsCards</code> from the package's <code>addon</code> folder, delete <code>Code.gs</code>, and replace <code>appsscript.json</code> with the one in that folder.</li>
+        <li>In this project's <strong>Project Settings</strong>, under <strong>Script properties</strong>, add a property named <code>SERVICE_URL</code> and paste the web app URL from step 3.</li>
+        <li>Select <strong>Deploy</strong>, then <strong>Test deployments</strong>, then <strong>Install</strong>. Open Gmail as the owner account, open Verlass, authorize it, and select <strong>Create the help desk</strong>.</li>
+        <li>Open <strong>Settings</strong>, then <strong>Team</strong>, and add your team. Do not share the Sheet with anyone who should not read every ticket.</li>
+      </ol>
+      <p class="callout"><strong>Other people</strong>To give the add-on to a few trusted people, share the add-on project (never the service project) with them as Editor and have each one select Deploy, Test deployments, and Install. Anyone who can edit the add-on project can change its code and could act as another person, so for ordinary staff publish it for your organization (below). Only the time zone in the service project's <code>appsscript.json</code> matters; the add-on shows times the way the service does.</p>
+      <p class="callout"><strong>Why the web app is open to "Anyone"</strong>The add-on reaches the service over the internet, so Google must let the request in. The service then checks every request itself: it must carry a Google sign-in token for a verified account, from your domain if you set <code>ALLOWED_DOMAIN</code>, issued to your own add-on project. The first time the owner or an administrator opens the add-on, the service remembers that project and refuses every other. A request without those gets an error and nothing else. Some organizations do not allow web apps that are open to anyone; in that case use the Standard install.</p>
+
+      <h3 id="gmail-organization">For everyone in a Google Workspace organization</h3>
+      <p class="prose">To give Verlass to a whole domain, an organizational unit, or a group, publish your add-on project in the Google Workspace Marketplace for your organization only. Google calls this a <strong>private</strong> app: it is visible only inside your organization and needs no review by Google. The choice between private and public cannot be changed afterward. You need a Google Workspace administrator and a Google Cloud project. Google's guides have the current screens: <a href="https://developers.google.com/workspace/add-ons/how-tos/publish-add-on-overview">Publish an add-on</a> and <a href="https://developers.google.com/workspace/marketplace/how-to-publish">Publish to the Marketplace</a>.</p>
+      <ol class="steps">
+        <li>In the <a href="https://console.cloud.google.com">Google Cloud console</a>, create a project in your organization. Under <strong>APIs and Services</strong>, set up the OAuth consent screen with the user type <strong>Internal</strong>.</li>
+        <li>In the Apps Script project that people install (the Standard project, or the add-on project of a Private install), open <strong>Project Settings</strong>, select <strong>Change project</strong>, and enter the Cloud project's number.</li>
+        <li>Select <strong>Deploy</strong>, then <strong>New deployment</strong>, choose the type <strong>Add-on</strong>, and deploy. Copy the <strong>Deployment ID</strong>.</li>
+        <li>In the Cloud console, enable the <strong>Google Workspace Marketplace SDK</strong>. On its <strong>App Configuration</strong> page choose <strong>Private</strong> visibility, select <strong>Google Workspace add-on</strong>, paste the Deployment ID, and list the same permissions as the project's <code>appsscript.json</code>.</li>
+        <li>Fill in the <strong>Store Listing</strong>. You can use the icons in this site's <code>assets/icons</code> folder, the small banner at <code>assets/brand/verlass-banner-220x140.png</code>, and a screenshot of the <a href="../demo/">demo</a> (Google asks for one of 1280 by 800 pixels), and link to this site's privacy, terms, and help pages. Select <strong>Publish</strong>.</li>
+        <li>In the <a href="https://admin.google.com">Google Admin console</a>, go to <strong>Apps</strong>, then <strong>Google Workspace Marketplace apps</strong>, add the app, and install it for everyone or for chosen groups.</li>
+      </ol>
+      <p class="callout"><strong>Private install: publish before people use it</strong>The service remembers which add-on project it answers. Moving the add-on project to a Cloud project (step 2) is expected to change that identity. If people then see "made for a different add-on", delete the script property <code>ALLOWED_AUDIENCE</code> in the service project and have the owner open the add-on first.</p>
+
+      <h3 id="gmail-clasp">With clasp, for IT teams and developers</h3>
+      <ol class="steps">
+        <li>Turn on the Apps Script API at <a href="https://script.google.com/home/usersettings">script.google.com/home/usersettings</a>.</li>
+        <li>Install and sign in: <code>npm install -g @google/clasp</code>, then <code>clasp login</code>.</li>
+        <li>In an empty folder run <code>clasp create-script --type standalone --title "Verlass"</code>. Copy the package's files into the folder, delete any <code>Code.js</code> that clasp made, and let the package's <code>appsscript.json</code> replace clasp's.</li>
+        <li>Run <code>clasp push --force</code>, then <code>clasp open-script</code>, and continue from the Deploy step above. Versions of clasp before 3 call these two commands <code>clasp create</code> and <code>clasp open</code>.</li>
+      </ol>
+
+      <h3 id="gmail-email">Optional: create a ticket from the open email</h3>
+      <p class="prose">Verlass can turn the email you are reading into a ticket. This needs one more permission, to read the open message, so it is off by default. To turn it on, edit <code>appsscript.json</code> in the project that people install: add <code>"https://www.googleapis.com/auth/gmail.addons.current.message.readonly"</code> to <code>oauthScopes</code>, and change <code>"gmail": {}</code> to:</p>
+      <pre class="callout"><code>"gmail": {
+  "contextualTriggers": [
+    { "unconditional": {}, "onTriggerFunction": "onGmailMessage" }
+  ]
+}</code></pre>
+      <p class="prose">Everyone approves the new permission the next time they open Verlass. A <strong>Create from this email</strong> button then appears whenever a message is open.</p>
+
+      <h3>Permissions</h3>
+      <div class="two-col">
+        <div><p><strong>Standard</strong></p><div class="table-wrap"><table class="plain"><tbody>
+            <tr><td><code>gmail.addons.execute</code></td><td>Run as a Gmail add-on.</td></tr>
+            <tr><td><code>userinfo.email</code></td><td>Know your email address, so your requests are yours.</td></tr>
+            <tr><td><code>spreadsheets</code></td><td>Read and write the help desk's Google Sheet.</td></tr>
+            <tr><td><code>script.send_mail</code></td><td>Send the help desk's email notices from your account.</td></tr>
+        </tbody></table></div></div>
+        <div><p><strong>Private: what staff approve</strong></p><div class="table-wrap"><table class="plain"><tbody>
+            <tr><td><code>gmail.addons.execute</code></td><td>Run as a Gmail add-on.</td></tr>
+            <tr><td><code>userinfo.email</code></td><td>Know your email address, so your requests are yours.</td></tr>
+            <tr><td><code>openid</code></td><td>Prove to the help desk service who you are.</td></tr>
+            <tr><td><code>script.external_request</code></td><td>Talk to the help desk service, and to nothing else.</td></tr>
+        </tbody></table></div>
+        <p><strong>Private: what the owner approves for the service</strong></p><div class="table-wrap"><table class="plain"><tbody>
+            <tr><td><code>userinfo.email</code></td><td>Know which account owns the help desk.</td></tr>
+            <tr><td><code>spreadsheets</code></td><td>Read and write the help desk's Google Sheet.</td></tr>
+            <tr><td><code>script.send_mail</code></td><td>Send the help desk's email notices from the owner's account.</td></tr>
+            <tr><td><code>script.external_request</code></td><td>Ask Google to check each sign-in token, and nothing else.</td></tr>
+        </tbody></table></div></div>
+      </div>
+
+      <h3>Updating</h3>
+      <p class="prose">Add-ons installed this way do not update themselves. When a new version comes out, replace the script files with the new package's files and save. Your script properties, your Sheet, and your settings are not touched. For a Private install, also open <strong>Deploy</strong>, then <strong>Manage deployments</strong> in the service project, edit the web app, and choose <strong>New version</strong>, so its address stays the same. If you published the add-on for your organization, edit its add-on deployment the same way and choose <strong>New version</strong>; until then people keep the old code.</p>
+
+      <h3>What to know</h3>
+      <ul class="prose">
+        <li>Google limits how much email an account sends through Apps Script each day: about 100 recipients for a free account and 1,500 for a Google Workspace account. In a Private install every notice comes from the owner's account, so a busy help desk on a free account can reach the limit. Email that could not be sent is noted in the ticket's activity.</li>
+        <li>The help desk's time zone is recorded when it is set up, from the project's <code>appsscript.json</code>, and can be changed under Settings, Hours.</li>
+        <li>A ticket's card shows its latest 20 messages. The Messages tab of the Sheet holds all of them.</li>
+      </ul>
+    </section>
+
+    <section class="tab-panel" id="outlook" role="tabpanel">
+      <h2 style="margin-top:8px">Outlook</h2>
+      <p class="prose">Verlass for Outlook is an Office add-in for Outlook on the web, the new and classic Outlook for Windows, Outlook for Mac, and Outlook for iOS and Android. Tickets are items in a SharePoint list in your own Microsoft 365 tenant, reached through Microsoft Graph as the signed-in person. It needs work or school accounts with Exchange Online mailboxes and SharePoint, which Microsoft 365 Business Basic, Standard, and Premium and the enterprise and education suites include. Personal Outlook.com accounts are not supported, and neither are the separate government and China clouds.</p>
+      <p class="notice"><strong>New in version 2.0.0.</strong> The Outlook add-in has been tested against a simulated Microsoft 365, not yet in a live tenant. Try it with a few people first, and please <a href="https://github.com/alyssaagard/verlass/issues">report what you find</a>.</p>
+
+      <h3>What an administrator does, once</h3>
+      <p class="prose">You need a <strong>Global Administrator</strong> for granting consent, for creating the lists, and for deploying the add-in. The same person must be an Owner of the help desk site.</p>
+      <ol class="steps">
+        <li><strong>Create a SharePoint site for the help desk.</strong> In SharePoint select <strong>Create site</strong>, choose <strong>Team site</strong>, name it, for example <strong>Help Desk</strong>, and set its privacy to <strong>Private</strong>. Make the help desk team <strong>Owners</strong> of the site. Then select the gear, <strong>Site permissions</strong>, <strong>Advanced permissions settings</strong>, open the <strong>Visitors</strong> group, select <strong>New</strong>, and add <strong>Everyone except external users</strong>. Do not add staff as Members: Members can change lists, including the help desk's settings. Copy the site's address, such as <code>https://contoso.sharepoint.com/sites/helpdesk</code>.</li>
+        <li><strong>Register the app.</strong> In the <a href="https://entra.microsoft.com">Microsoft Entra admin center</a>, go to <strong>App registrations</strong> and select <strong>New registration</strong>. Name it <strong>Verlass</strong>, keep <strong>Accounts in this organizational directory only</strong>, and under <strong>Redirect URI</strong> choose <strong>Single-page application (SPA)</strong> and enter <code>brk-multihub://verlass.alyssaagard.dev</code>. Select <strong>Register</strong>.</li>
+        <li>On the app's <strong>Authentication</strong> page, add two more single-page application redirect URIs: <code>https://verlass.alyssaagard.dev/app/blank.html</code> and <code>https://verlass.alyssaagard.dev/app/auth.html</code>. Save.</li>
+        <li>On <strong>API permissions</strong>, select <strong>Add a permission</strong>, then <strong>Microsoft Graph</strong>, then <strong>Delegated permissions</strong>, and add <code>Sites.Selected</code> and <code>Mail.Send</code>. <code>User.Read</code> is already there. Then select <strong>Grant admin consent</strong>.</li>
+        <li>From the app's <strong>Overview</strong> page, copy the <strong>Application (client) ID</strong> and the <strong>Directory (tenant) ID</strong>, and make your manifest:</li>
+      </ol>
+
+      <form class="form card" id="maker">
+        <h3 style="margin-top:0">Make your manifest</h3>
+        <p class="muted small" style="margin:0">The manifest is made in your browser. These values are identifiers, not passwords. They become part of the add-in's address, so GitHub, as this site's host, can see them when the add-in opens.</p>
+        <label>Application (client) ID <input name="client" required autocomplete="off" spellcheck="false" placeholder="00000000-0000-0000-0000-000000000000"></label>
+        <label>Directory (tenant) ID <input name="tenant" required autocomplete="off" spellcheck="false" placeholder="00000000-0000-0000-0000-000000000000"></label>
+        <label>SharePoint site address <input name="site" type="url" required autocomplete="off" spellcheck="false" placeholder="https://contoso.sharepoint.com/sites/helpdesk"></label>
+        <label>Email notices
+          <select name="mail"><option value="on">Send them from the person who acts (needs Mail.Send)</option><option value="off">Do not send email from the add-in</option></select>
+          <span class="hint">Choose the second if you would rather build notices with a list rule or Power Automate. Then leave Mail.Send out of step 4.</span>
+        </label>
+        <label>Access to SharePoint
+          <select name="access"><option value="selected">Only the help desk site (Sites.Selected, recommended)</option><option value="all">Any site the person can open (Sites.ReadWrite.All)</option></select>
+          <span class="hint">The first is narrower and needs the one-time grant in step 6. If you choose the second, add Sites.ReadWrite.All in step 4 instead of Sites.Selected.</span>
+        </label>
+        <div><button class="btn btn-primary" type="submit">Make the manifest</button></div>
+        <output id="maker-out" for="maker"></output>
+        <div id="maker-result" hidden>
+          <p><a class="btn btn-primary" id="maker-download" href="#" download="verlass-manifest.xml">Download verlass-manifest.xml</a> <a class="btn" id="maker-app" href="#" target="_blank" rel="noopener">Open the browser app to finish setup</a></p>
+          <p class="muted small">Permissions this manifest's add-in will ask for: <span id="maker-scopes"></span>.</p>
+        </div>
+      </form>
+
+      <ol class="steps" start="6" style="counter-reset: step 5">
+        <li><strong>Create the lists.</strong> Select <strong>Open the browser app to finish setup</strong> above and sign in as a Global Administrator who is also an Owner of the site. Open <strong>I am the administrator</strong> and select <strong>1. Create the lists</strong>. Microsoft asks you to approve one higher permission, <code>Sites.FullControl.All</code> (or <code>Sites.Manage.All</code> if you chose the wider access above). Leave <strong>Consent on behalf of your organization</strong> unchecked, so it applies to your account only. Verlass uses it to give the add-in access to this one site and to create three lists, and does not store it. Then enter your organization's name and select <strong>2. Create the help desk</strong>.</li>
+        <li id="outlook-revoke"><strong>Remove the setup permission.</strong> It is no longer needed. In the Microsoft Entra admin center, open <strong>Enterprise applications</strong>, choose <strong>Verlass</strong>, then <strong>Permissions</strong>, and on the <strong>User consent</strong> tab remove that permission. Microsoft's page <a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/manage-application-permissions">Review permissions granted to enterprise applications</a> has the current steps.</li>
+        <li id="outlook-permissions"><strong>Set who can see what.</strong> On the site, open <strong>Site contents</strong> and for each list choose <strong>Settings</strong>:
+          <ul>
+            <li><strong>Help Desk Tickets</strong>: under <strong>Advanced settings</strong>, <strong>Item-level Permissions</strong>, choose <strong>Read items that were created by the user</strong> and <strong>Create items and edit items that were created by the user</strong>. Under <strong>Permissions for this list</strong>, stop inheriting permissions and grant <strong>Everyone except external users</strong> the level <strong>Contribute</strong>. Site Owners keep Full Control, which is what lets the team see every ticket.</li>
+            <li><strong>Help Desk Notes</strong>: under <strong>Permissions for this list</strong>, stop inheriting permissions and remove every group except the Owners. Internal notes live here.</li>
+            <li><strong>Help Desk Settings</strong>: leave it as it is. Visitors can read it, and Owners can change it.</li>
+          </ul>
+        </li>
+        <li><strong>Deploy the add-in.</strong> In the <a href="https://admin.microsoft.com">Microsoft 365 admin center</a>, go to <strong>Settings</strong>, then <strong>Integrated apps</strong>. Select <strong>Upload custom apps</strong>, choose <strong>Office Add-in</strong> as the app type, and upload <code>verlass-manifest.xml</code>. Choose who gets it and finish the deployment. Microsoft says it can take up to 24 hours to appear, sometimes longer.</li>
+        <li><strong>Add your team.</strong> Open Verlass in Outlook, open the menu, choose <strong>Settings</strong>, then <strong>Lists</strong>, then <strong>Team</strong>.</li>
+      </ol>
+
+      <h3>For one person, or to test first</h3>
+      <p class="prose">In Outlook on the web, open <a href="https://aka.ms/olksideload">aka.ms/olksideload</a>, choose <strong>My add-ins</strong>, then <strong>Add a custom add-in</strong>, then <strong>Add from File</strong>, and choose your manifest. The add-in then follows your account to Outlook on Windows, Mac, and mobile.</p>
+
+      <h3>Where to find it</h3>
+      <p class="prose">Open any message. In Outlook on the web and the new Outlook, select <strong>Apps</strong> in the message's toolbar and choose <strong>Verlass</strong>. In classic Outlook for Windows and Outlook for Mac, select the <strong>Help desk</strong> button on the ribbon. Pin the panel to keep it open. On a phone, open a message, select the three dots, and choose <strong>Verlass</strong>. Outlook opens add-ins from an open message, which also gives you the <strong>Create from the open email</strong> button. The same help desk opens in any browser at <code>https://verlass.alyssaagard.dev/app/</code>, which suits a team that wants its queue on a large screen.</p>
+
+      <h3>Permissions</h3>
+      <div class="table-wrap"><table class="plain"><tbody>
+        <tr><td><code>ReadItem</code> (Outlook)</td><td>Read the one message that is open, to turn it into a ticket. Verlass cannot read the rest of the mailbox.</td></tr>
+        <tr><td><code>User.Read</code></td><td>Know your name and email address.</td></tr>
+        <tr><td><code>Sites.Selected</code></td><td>Read and write the help desk's lists on the one SharePoint site your administrator granted, as you, within what SharePoint lets you see.</td></tr>
+        <tr><td><code>Mail.Send</code> (optional)</td><td>Send the help desk's email notices from your mailbox when you act.</td></tr>
+      </tbody></table></div>
+
+      <h3>What to know</h3>
+      <ul class="prose">
+        <li>Email notices are sent from the mailbox of the person who acts, and only while their Verlass panel is open.</li>
+        <li>When a team member creates a ticket for someone else, that person follows it by email. It does not appear under their own requests, because SharePoint shows people only the items they created.</li>
+        <li>SharePoint, not Verlass, enforces who can read what. A person who opens the list in SharePoint directly can change the fields of their own tickets.</li>
+        <li>Round robin assignment picks a team member evenly at random, because SharePoint keeps no counter that requesters could update.</li>
+        <li>Lists show at most 12,000 tickets, and one ticket's conversation can hold about 60,000 characters.</li>
+        <li>In the browser app, Microsoft's sign-in lasts about a day. When it ends, the app shows a <strong>Sign in again</strong> button.</li>
+        <li>Renaming a status, priority, category, or location renames it on the tickets that use it, one ticket at a time, which can take a while on a large list.</li>
+      </ul>
+      <div class="file-row"><div class="grow"><code>verlass-outlook.zip</code><br><span class="muted small">A manifest to fill in by hand and this guide as a text file, for sharing with an IT team</span></div><a class="btn" href="../download/verlass-outlook.zip" download>Download</a></div>
+    </section>
+
+    <h2>Which install for whom</h2>
+    <div class="table-wrap"><table class="plain">
+      <thead><tr><th>You are</th><th>Use</th></tr></thead>
+      <tbody>
+        <tr><td>One person or a family with Gmail</td><td>Gmail, Standard install</td></tr>
+        <tr><td>A small business or nonprofit on Google Workspace</td><td>Gmail, Private install, shared with a few people or published privately</td></tr>
+        <tr><td>A school or district on Google Workspace for Education</td><td>Gmail, Private install, published privately and installed by the administrator</td></tr>
+        <tr><td>A business, school, or enterprise on Microsoft 365</td><td>Outlook, deployed from the Microsoft 365 admin center</td></tr>
+        <tr><td>An organization that uses both</td><td>Either one. Each keeps its own tickets, so choose the platform your help desk team works in.</td></tr>
+      </tbody>
+    </table></div>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap">
+      <div>Verlass 2.0.0 by Alyssa I. Agard. Free and open source under the MIT License.</div>
+      <nav aria-label="Footer">
+        <a href="../privacy/">Privacy</a>
+        <a href="../terms/">Terms</a>
+        <a href="../help/">Help</a>
+        <a href="https://github.com/alyssaagard/verlass">Source code</a>
+      </nav>
+    </div>
+  </footer>
+  <script type="module" src="../assets/site.js"></script>
+  <script type="module">
+    import { outlookManifest } from "../app/outlook/manifest.js";
+    import { checkConfig, configQuery, scopesFor } from "../app/hosts/config.js";
+    const INFO = {"name":"Verlass","siteUrl":"https://verlass.alyssaagard.dev","addinId":"bb17164f-3928-4329-9458-1b70d3575dff","version":"2.0.0","provider":"Alyssa I. Agard","description":"A free, open-source help desk for any organization. People send and follow requests from Gmail or Outlook, and the team works its queue in the same place. Your data stays in your own Google or Microsoft 365 account."};
+    const form = document.getElementById("maker");
+    const out = document.getElementById("maker-out");
+    const result = document.getElementById("maker-result");
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      const checked = checkConfig({ client: data.get("client"), tenant: data.get("tenant"), site: data.get("site"), mail: data.get("mail"), access: data.get("access") });
+      if (!checked.ok) {
+        out.textContent = checked.errors.join(" ");
+        result.hidden = true;
+        return;
+      }
+      out.textContent = "";
+      const xml = outlookManifest(INFO, checked.config);
+      const link = document.getElementById("maker-download");
+      if (link.href.startsWith("blob:")) URL.revokeObjectURL(link.href);
+      link.href = URL.createObjectURL(new Blob([xml], { type: "application/xml" }));
+      document.getElementById("maker-app").href = new URL("../app/", window.location.href).href + "?" + configQuery(checked.config);
+      document.getElementById("maker-scopes").textContent = scopesFor(checked.config).join(", ");
+      result.hidden = false;
+      result.scrollIntoView({ block: "nearest" });
+    });
+  </script>
+</body>
+</html>

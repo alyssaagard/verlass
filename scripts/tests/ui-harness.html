@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>running</title>
+  <link rel="stylesheet" href="../../docs/assets/theme.css">
+  <link rel="stylesheet" href="../../docs/app/ui/app.css">
+</head>
+<body class="app-body">
+  <!-- Drives the real app screens with the demo data. scripts/tests/ui.mjs opens this page in
+       headless Chrome and reads the results from the element below. -->
+  <div id="app" style="width:360px"></div>
+  <pre id="result"></pre>
+  <script type="module">
+    import { mountApp } from "../../docs/app/ui/app.js";
+    import { makeService } from "../../docs/app/stores/service.js";
+    import { makeDemoBackend } from "../../docs/app/stores/demo.js";
+    import { initTheme } from "../../docs/app/ui/dom.js";
+
+    const results = [];
+    const check = (ok, name, detail) => results.push({ ok: !!ok, name, detail: ok ? "" : String(detail === undefined ? "" : detail).slice(0, 300) });
+    const root = document.getElementById("app");
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const settle = async () => {
+      for (let i = 0; i < 200; i++) {
+        await sleep(10);
+        if (!root.querySelector(".loading") && !root.querySelector('[aria-busy="true"]')) break;
+      }
+      await sleep(10);
+    };
+    const all = (sel) => Array.from(root.querySelectorAll(sel));
+    const text = () => root.querySelector("main").innerText;
+    const byText = (sel, t) => all(sel).find((el) => el.textContent.trim() === t) || all(sel).find((el) => el.textContent.includes(t));
+    const click = async (sel, t) => {
+      const el = byText(sel, t);
+      if (!el) throw new Error(`nothing to select: ${sel} "${t}"`);
+      el.click();
+      await settle();
+    };
+    const fill = (name, value) => {
+      const el = root.querySelector(`[name="${name}"]`);
+      if (!el) throw new Error("no field named " + name);
+      if (el.type === "checkbox") el.checked = !!value;
+      else el.value = value;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    const fieldNames = () => all("main [name]").map((el) => el.name);
+    window.addEventListener("error", (e) => check(false, "no script errors", e.message));
+    window.addEventListener("unhandledrejection", (e) => check(false, "no unhandled promise rejections", e.reason && e.reason.message));
+
+    async function scenario() {
+      initTheme();
+      const backend = makeDemoBackend({ now: Date.now() });
+      const app = mountApp(root, { service: makeService(backend), host: { kind: "demo", name: "Verlass", siteUrl: "..", demo: backend } });
+      await app.ready;
+      await settle();
+      const as = async (id) => { backend.setPersona(id); await app.home(); await settle(); };
+
+      // A staff member.
+      check(byText("button", "New request") && !root.querySelector(".tile"), "a staff member sees New request and no team queues", text());
+      check(all(".row").length >= 1 && root.querySelector(".bar-title strong").textContent === "IT Help Desk", "their own requests and the help desk's name are shown");
+      check(root.querySelector(".bar-mark svg"), "the mark is drawn in the header");
+      await click("button", "New request");
+      check(JSON.stringify(fieldNames()) === JSON.stringify(["subject", "category", "priority", "location", "description"]), "the request form has the requester's fields", fieldNames());
+      check(root.querySelector('[name="priority"]').value === "" && root.querySelector('[name="priority"] option').textContent === "Standard for the category", "the priority starts as the category's own");
+      await click("button", "Send request");
+      check(/Enter a subject/.test(text()) && /Describe the problem/.test(text()), "an empty form lists what is missing", text());
+      fill("subject", "<img src=x onerror=\"window.__xss=1\"> Keyboard");
+      fill("description", "Keys stick.\n<script>window.__xss=2<\/script>");
+      fill("category", "Computer or laptop");
+      await click("button", "Send request");
+      check(/TKT-0013/.test(text()) && root.querySelector("h1").textContent.includes("<img src=x"), "the new ticket opens, with its text shown as text", text().slice(0, 200));
+      await sleep(50);
+      check(window.__xss === undefined && !root.querySelector("main img") && !root.querySelector("main script"), "text typed by a person never becomes markup");
+      check(/was sent/.test(root.querySelector(".toasts").textContent), "a notice confirms the ticket was sent");
+      check(JSON.stringify(fieldNames()) === JSON.stringify(["reply"]), "a requester can only reply", fieldNames());
+      await click("button", "Send reply");
+      check(/Write a reply first/.test(root.querySelector(".toasts").textContent), "an empty reply is not sent");
+      fill("reply", "It is the space bar.");
+      await click("button", "Send reply");
+      check(root.querySelector(".msg.requester .body").textContent === "It is the space bar.", "the reply appears in the conversation");
+      await click("button", "I no longer need this");
+      check(root.querySelector(".badge.k-done") && byText("button", "Send and reopen"), "the requester closes the ticket and can reopen it", text());
+      root.querySelector(".back").click();
+      await settle();
+      check(root.querySelector("main h2"), "Back returns to the first screen");
+
+      // The team.
+      await as("agent");
+      check(all(".tile").length === 6 && byText("button", "Search"), "a team member sees six queues and the search box");
+      await click(".tile", "Unassigned");
+      check(root.querySelector("h1").textContent === "Unassigned" && all(".chip").length === 7 && all(".row").length >= 1, "a queue opens with its filters", text().slice(0, 200));
+      await click(".chip", "All");
+      check(all(".row").length === 13 && !root.querySelector(".pager") && root.querySelector(".chip.on").textContent === "All", "the All queue lists every ticket and marks the chosen queue", all(".row").length);
+      fill("q", "wrong FOLDER");
+      await click("button", "Search");
+      check(all(".row").length === 1 && /Scanner saves files/.test(all(".row")[0].textContent), "search narrows the list to the matching ticket", all(".row").map((r) => r.textContent));
+      await click(".row", "Scanner saves files");
+      check(JSON.stringify(fieldNames()) === JSON.stringify(["status", "assignedTo", "priority", "category", "due", "reply", "note"]), "the team sees the work fields", fieldNames());
+      fill("status", "In progress");
+      fill("reply", "I will look this afternoon.");
+      fill("note", "Check the scan-to-folder profile.");
+      await click("button", "Save");
+      check(root.querySelector(".msg.team .body").textContent === "I will look this afternoon." && root.querySelector(".msg.internal .badge.note"), "the reply and the internal note are saved and told apart", text().slice(0, 300));
+      check(root.querySelector(".badge.k-open").textContent === "In progress", "the status badge changes");
+      fill("reply", "Half-written reply");
+      await click("button", "Assign to me");
+      check(/Sam Patel/.test(root.querySelector(".facts").textContent), "Assign to me assigns the ticket", root.querySelector(".facts").textContent);
+      check(root.querySelector('[name="reply"]').value === "Half-written reply", "a reply that was being typed is still there afterward");
+      fill("reply", "");
+      check(root.querySelector("details.activity li"), "the activity log is listed");
+      check(!byText(".menu-item", "Settings"), "a team member who is not an administrator has no Settings");
+
+      // The administrator.
+      await as("admin");
+      await click("button", "Settings");
+      check(all(".chip").map((c) => c.textContent).join() === "General,Lists,Email wording" && all("details.group").length === 5, "the settings open on General with five groups");
+      fill("deskName", "Service Desk");
+      fill("website", "www.example.org");
+      fill("ticketWord", "ticket");
+      await click("button", "Save settings");
+      check(root.querySelector(".bar-title strong").textContent === "Service Desk", "a saved setting takes effect at once");
+      check(root.querySelector('[name="website"]').value === "https://www.example.org" && root.querySelector('[name="ticketWord"]').value === "ticket", "one Save keeps the changes made in every group");
+      fill("ticketWord", "request");
+      fill("supportEmail", "not-an-address");
+      await click("button", "Save settings");
+      check(/Corrected because the value could not be used: Reply-to address/.test(root.querySelector(".toasts").textContent), "a value that could not be used is named when saving", root.querySelector(".toasts").textContent);
+      await click(".chip", "Lists");
+      const before = all(".item").length;
+      await click("button", "Add");
+      const names = all('.item [name="name"]');
+      names[names.length - 1].value = "Badge reader";
+      await click("button", "Save categories");
+      check(all(".item").length === before + 1, "a category is added", all(".item").length);
+      await click(".chip", "Statuses");
+      all('.item [name="name"]')[1].value = "Working on it";
+      await click("button", "Save statuses");
+      check(/Renamed on \d+ tickets?\./.test(root.querySelector(".toasts").textContent), "renaming a status renames it on the tickets that use it", root.querySelector(".toasts").textContent);
+      const moveDown = all('.item [data-tool="down"]')[0];
+      moveDown.focus();
+      moveDown.click();
+      check(document.activeElement && document.activeElement.getAttribute("data-tool") === "down" && document.activeElement.getAttribute("aria-label") === "Move Open down", "moving an item keeps the keyboard focus on it, and the button names the item", document.activeElement && document.activeElement.getAttribute("aria-label"));
+      all('.item [data-tool="up"]')[1].click();
+      await click(".chip", "Assignment rules");
+      await click("button", "Add");
+      const last = (name) => all(`.item:last-child [name="${name}"]`)[0];
+      last("category").value = "Badge reader";
+      await click("button", "Save assignment rules");
+      check(/needs a value for "Assign to"/.test(root.querySelector(".toasts").textContent) && all(".item").length === 2, "a rule with nobody to assign to is not saved, and the reason is shown");
+      last("assignTo").value = "jordan.lee@example.com";
+      await click("button", "Save assignment rules");
+      check(all(".item").length === 2 && last("assignTo").value === "jordan.lee@example.com", "an assignment rule is added");
+      await click(".chip", "Email wording");
+      fill("subject", "Received: {{ticket.id}}");
+      await sleep(20);
+      const frame = root.querySelector("iframe.mail-frame");
+      check(frame && frame.getAttribute("sandbox") === "" && /Subject: Received: TKT-0042/.test(text()) && frame.srcdoc.includes("Service Desk"), "the email preview follows the wording as it is typed, in a sandboxed frame");
+      await click("button", "Save this email");
+      root.querySelector(".back").click();
+      await settle();
+
+      // The new category and rule are live, and the edited email is used.
+      await as("staff");
+      await click("button", "New request");
+      fill("subject", "Badge reader at the door");
+      fill("description", "It beeps but does not open.");
+      fill("category", "Badge reader");
+      await click("button", "Send request");
+      check(/Jordan Lee|jordan\.lee@example\.com/.test(root.querySelector(".facts").textContent), "the new rule assigns the new category", root.querySelector(".facts").textContent);
+      root.querySelector(".menu summary").click();
+      await click(".menu-item", "Email outbox");
+      check(byText("details.mail summary", "Received: TKT-0014") && all("details.mail iframe").every((f) => f.getAttribute("sandbox") === ""), "the outbox holds the email with the new wording", text().slice(0, 200));
+
+      // Themes.
+      const bg = () => getComputedStyle(root).backgroundColor;
+      const dark = bg();
+      root.querySelector(".menu summary").click();
+      await click(".menu-item", "Light");
+      const light = bg();
+      check(document.documentElement.getAttribute("data-theme") === "light" && light !== dark, "Light changes the colors", dark + " " + light);
+      await click(".menu-item", "System");
+      check(document.documentElement.getAttribute("data-theme-choice") === "system", "System follows the device");
+      await click(".menu-item", "Dark");
+      check(document.documentElement.getAttribute("data-theme") === "dark" && bg() === dark, "Dark is restored");
+
+      // Every field has a label, every button a name.
+      await as("agent");
+      await click(".tile", "Open");
+      await click(".row", "TKT-");
+      const unlabeled = all("main input, main select, main textarea").filter((el) => !el.id || !root.querySelector(`label[for="${el.id}"]`));
+      check(unlabeled.length === 0, "every field has a label", unlabeled.map((el) => el.name));
+      const unnamed = all("button, a").filter((el) => !el.textContent.trim() && !el.getAttribute("aria-label"));
+      check(unnamed.length === 0, "every button and link has a name", unnamed.length);
+      check(root.scrollWidth <= 361, "nothing is wider than a 360 pixel panel", root.scrollWidth);
+    }
+
+    scenario()
+      .catch((e) => check(false, "the scenario ran to the end", (e && e.stack) || e))
+      .finally(() => {
+        document.getElementById("result").textContent = JSON.stringify(results);
+        document.title = "done";
+      });
+  </script>
+</body>
+</html>

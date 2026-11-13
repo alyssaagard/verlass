@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verlass</title>
+  <meta name="robots" content="noindex">
+  <meta name="author" content="Alyssa I. Agard">
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <script>(function(){var d=document.documentElement;try{var c=localStorage.getItem("helpdesk.theme");if(c!=="light"&&c!=="system")c="dark";var l=c==="light"||(c==="system"&&window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches);d.setAttribute("data-theme",l?"light":"dark");d.setAttribute("data-theme-choice",c)}catch(e){d.setAttribute("data-theme","dark")}})();</script>
+  <link rel="stylesheet" href="../assets/theme.css">
+  <link rel="stylesheet" href="ui/app.css">
+  <script src="vendor/msal-browser.min.js"></script>
+  <style>html, body { height: 100%; } #app { min-height: 100%; }</style>
+</head>
+<body class="app-body">
+  <div id="app"><p style="padding:16px;color:#9DAAA2;font-family:sans-serif">Loading Verlass...</p></div>
+  <noscript><p style="padding:16px">Verlass needs JavaScript.</p></noscript>
+  <script type="module">
+    import { startM365 } from "./hosts/m365.js";
+    startM365(document.getElementById("app"), { kind: "web", name: "Verlass", siteUrl: new URL("..", window.location.href).href.replace(/\/$/, "") });
+  </script>
+</body>
+</html>

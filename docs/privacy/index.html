@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy | Verlass</title>
+  <meta name="description" content="Verlass's publisher receives nothing from you. Your tickets stay in your own Google or Microsoft 365 account.">
+  <meta name="author" content="Alyssa I. Agard">
+  <meta property="og:title" content="Privacy | Verlass">
+  <meta property="og:description" content="Verlass's publisher receives nothing from you. Your tickets stay in your own Google or Microsoft 365 account.">
+  <meta property="og:image" content="https://verlass.alyssaagard.dev/assets/brand/verlass-social.png">
+  <meta property="og:url" content="https://verlass.alyssaagard.dev/privacy/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#141C18">
+  <link rel="canonical" href="https://verlass.alyssaagard.dev/privacy/">
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <script>(function(){var d=document.documentElement;try{var c=localStorage.getItem("helpdesk.theme");if(c!=="light"&&c!=="system")c="dark";var l=c==="light"||(c==="system"&&window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches);d.setAttribute("data-theme",l?"light":"dark");d.setAttribute("data-theme-choice",c)}catch(e){d.setAttribute("data-theme","dark")}})();</script>
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body class="site">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-head">
+    <div class="wrap">
+      <a class="brand" href="../" aria-label="Verlass home"><img src="../assets/brand/verlass-mark.svg" alt="" width="32" height="32"><span>Verlass</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="../demo/">Demo</a>
+        <a href="../install/">Install</a>
+        <a href="../help/">Help</a>
+        <a href="https://github.com/alyssaagard/verlass">GitHub</a>
+        <span class="theme-pick" role="group" aria-label="Theme">
+          <button type="button" data-theme="dark">Dark</button><button type="button" data-theme="light">Light</button><button type="button" data-theme="system">System</button>
+        </span>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    <h1 class="page-title">Privacy</h1>
+    <p class="muted">Last updated 2026-11-13. Verlass is published by Alyssa I. Agard.</p>
+    <div class="prose">
+      <p class="lead">Verlass's publisher receives nothing from you. Verlass has no server of its own, no accounts, no analytics, and no advertising, and its publisher cannot see your tickets or your settings.</p>
+
+      <h2>Where your information is kept</h2>
+      <ul>
+        <li><strong>Gmail.</strong> Tickets, messages, the activity log, and settings are rows in one Google Sheet in the Google Drive of the person or account that set up the help desk. The add-on is Apps Script code that you copy into your own Google account and that runs there. Email notices are sent by Google: from your own account in a Standard install, and from the help desk owner's account in a Private install.</li>
+        <li><strong>Outlook.</strong> Tickets, notes, and settings are items in three lists on a SharePoint site in your organization's Microsoft 365. The add-in's code is loaded from this website each time it opens, runs in Outlook on your device, and talks only to Microsoft Graph, as you. Email notices are sent from your own mailbox. The add-in's address includes your organization's application ID, tenant ID, and site address, which GitHub, as this site's host, can see. An organization that prefers can host its own copy of the site; the code is public.</li>
+        <li><strong>The demo.</strong> The sample help desk on this site lives in your browser tab and is erased when you close it.</li>
+      </ul>
+      <p>Who can read a ticket is decided by your own Google or Microsoft 365 permissions, as described in the <a href="../install/">install guide</a>. Your organization's own privacy rules apply to what people write in tickets.</p>
+
+      <h2>Permissions, and why each one is needed</h2>
+      <p>In Gmail (the Standard install):</p>
+      <div class="table-wrap"><table class="plain"><tbody>
+        <tr><td><code>gmail.addons.execute</code></td><td>Run as a Gmail add-on.</td></tr>
+            <tr><td><code>userinfo.email</code></td><td>Know your email address, so your requests are yours.</td></tr>
+            <tr><td><code>spreadsheets</code></td><td>Read and write the help desk's Google Sheet.</td></tr>
+            <tr><td><code>script.send_mail</code></td><td>Send the help desk's email notices from your account.</td></tr>
+      </tbody></table></div>
+      <p>The Private install asks staff for less; see the <a href="../install/#gmail">install page</a>. The optional feature that turns the open email into a ticket adds permission to read that one message.</p>
+      <p>In Outlook: the add-in can read the message that is open (<code>ReadItem</code>), your name and email address (<code>User.Read</code>), the help desk's lists on the one SharePoint site your administrator chose (<code>Sites.Selected</code>), and, if your administrator turned email notices on, it can send mail as you (<code>Mail.Send</code>). It uses these only to show and save tickets and to send the help desk's own notices. An administrator can choose wider access to SharePoint instead (<code>Sites.ReadWrite.All</code>). During setup, one administrator approves a higher permission once (<code>Sites.FullControl.All</code> or <code>Sites.Manage.All</code>) to create the lists, and the install guide says how to remove it afterward.</p>
+
+      <h2>This website</h2>
+      <ul>
+        <li>The site and the Outlook add-in's pages are static files hosted on GitHub Pages. GitHub, as the host, receives the usual technical information any web server sees, such as your IP address. See <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's privacy statement</a>.</li>
+        <li>The site sets no cookies. It remembers two things in your browser's own storage: your theme choice, and, for the browser version of the Outlook help desk, your organization's connection settings. Signing in to Microsoft 365 stores Microsoft's sign-in tokens in your browser. None of this is sent to Verlass's publisher.</li>
+        <li>Fonts and Microsoft's sign-in library are served from this site. The Outlook pages load Microsoft's Office script from Microsoft.</li>
+      </ul>
+
+      <h2>Children and schools</h2>
+      <p>Verlass is a tool for an organization's staff and is not directed at children. A school that uses it keeps every record in its own Google or Microsoft 365 account, under the school's control.</p>
+
+      <h2>Removing Verlass and its data</h2>
+      <p>Everything Verlass stores is in your own account, so removing it is in your hands. In Gmail, uninstall the add-on, delete the Apps Script project or projects, and delete the Google Sheet. In Outlook, remove the add-in, delete the app registration, and delete the three lists or the site. Clearing this site's data in your browser removes the remembered theme, connection settings, and sign-in.</p>
+
+      <h2>Changes and contact</h2>
+      <p>If this page changes, the date above changes with it, and the history is public in the <a href="https://github.com/alyssaagard/verlass">source repository</a>. Questions are welcome as an issue there.</p>
+    </div>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap">
+      <div>Verlass 2.0.0 by Alyssa I. Agard. Free and open source under the MIT License.</div>
+      <nav aria-label="Footer">
+        <a href="../privacy/">Privacy</a>
+        <a href="../terms/">Terms</a>
+        <a href="../help/">Help</a>
+        <a href="https://github.com/alyssaagard/verlass">Source code</a>
+      </nav>
+    </div>
+  </footer>
+  <script type="module" src="../assets/site.js"></script>
+</body>
+</html>
