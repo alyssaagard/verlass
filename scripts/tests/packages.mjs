@@ -42,11 +42,14 @@ export async function run({ ROOT, check, load, wellFormed }) {
   }
 
   const standard = unzip(builds[`${config.SLUG}-gmail.zip`]);
-  eq(Object.keys(standard).sort(), [...GMAIL_FILES.standard, "README.txt", "appsscript.json"].sort(), "the Standard package's files");
+  eq(Object.keys(standard).sort(), [...GMAIL_FILES.standard, "LICENSE.txt", "README.txt", "appsscript.json"].sort(), "the Standard package's files");
   const priv = unzip(builds[`${config.SLUG}-gmail-private.zip`]);
-  eq(Object.keys(priv).sort(), [...GMAIL_FILES.service.map((f) => "service/" + f), "service/appsscript.json", ...GMAIL_FILES.addon.map((f) => "addon/" + f), "addon/appsscript.json", "README.txt"].sort(), "the Private package's files");
+  eq(Object.keys(priv).sort(), [...GMAIL_FILES.service.map((f) => "service/" + f), "service/appsscript.json", ...GMAIL_FILES.addon.map((f) => "addon/" + f), "addon/appsscript.json", "LICENSE.txt", "README.txt"].sort(), "the Private package's files");
   const outlook = unzip(builds[`${config.SLUG}-outlook.zip`]);
-  eq(Object.keys(outlook).sort(), ["README.txt", `${config.SLUG}-manifest.xml`], "the Outlook package's files");
+  eq(Object.keys(outlook).sort(), ["LICENSE.txt", "README.txt", `${config.SLUG}-manifest.xml`], "the Outlook package's files");
+  for (const pkg of [standard, priv, outlook]) check(/MIT License/.test(pkg["LICENSE.txt"]) && pkg["LICENSE.txt"].includes(config.PROVIDER), "each package carries the MIT License with the copyright holder");
+  for (const [name, text] of Object.entries(standard)) if (name.endsWith(".gs")) check(/Copyright \(c\) 2026 .+\. MIT License; see LICENSE\./.test(text.slice(0, 1500)), `${name} names its copyright holder and license`);
+  for (const pkg of [standard, priv, outlook]) for (const [name, text] of Object.entries(pkg)) check(!/\r/.test(text), `${name} uses LF line endings`);
 
   // The guides name every file, and the files are the built ones.
   for (const f of Object.keys(standard)) check(f === "README.txt" || standard["README.txt"].includes(f), `the Standard guide mentions ${f}`);

@@ -110,7 +110,7 @@
           <tr><td>Working day starts</td><td>Time</td><td><code>08:00</code></td><td>24-hour time, such as 08:00.</td></tr>
           <tr><td>Working day ends</td><td>Time</td><td><code>17:00</code></td><td>24-hour time, such as 17:00.</td></tr>
           <tr><td>Days off</td><td>Text</td><td><span class="muted">empty</span></td><td>Dates as YYYY-MM-DD separated by commas.</td></tr>
-          <tr><td>Time zone</td><td>Text</td><td><span class="muted">empty</span></td><td>For example America/New_York. Leave empty to use the help desk's own time zone.</td></tr>
+          <tr><td>Time zone</td><td>Text</td><td><span class="muted">empty</span></td><td>For example America/New_York or Europe/Berlin. Set it so that due times are counted the same way for everyone.</td></tr>
         </tbody>
       </table></div>
       <h3>Email</h3>
@@ -122,7 +122,7 @@
           <tr><td>Email a person when a ticket is assigned to them</td><td>On or off</td><td>On</td><td></td></tr>
           <tr><td>Email the requester when the status changes</td><td>On or off</td><td>On</td><td>Each status can also turn this off for itself.</td></tr>
           <tr><td>Email the requester when the team replies</td><td>On or off</td><td>On</td><td></td></tr>
-          <tr><td>Email the team when the requester replies</td><td>On or off</td><td>On</td><td></td></tr>
+          <tr><td>Email the team when the requester replies</td><td>On or off</td><td>On</td><td>A requester who closes or reopens a ticket without a message also sends this email.</td></tr>
         </tbody>
       </table></div>
 
@@ -139,7 +139,8 @@
       </tbody>
     </table></div>
     <p class="prose">New help desks start from one of these presets: Office or business, School or college, Nonprofit or community group, Facilities and maintenance. A preset fills the categories and locations and sets the help desk's name and the location label; rename, remove, and add items freely. In Outlook and the browser app, an administrator can load another preset later.</p>
-    <p class="prose"><strong>Renaming.</strong> Tickets store the names of their status, priority, category, and location. To rename one, change its name in place and save: Verlass renames it on every ticket and rule that uses it and tells you how many tickets changed. If you remove an item instead, its tickets keep the old name, and Settings lists them under "To review". A ticket whose status is no longer on the list counts as open.</p>
+    <p class="prose"><strong>Renaming.</strong> Tickets store the names of their status, priority, category, and location. To rename one, change its name and save: Verlass renames it on every ticket and rule that uses it and tells you how many tickets changed. A status keeps its kind when renamed, so a rename never reopens or finishes tickets. If you remove an item instead, its tickets keep the old name, and Settings lists them under "To review"; a ticket whose status is no longer on the list counts as open. Loading a preset renames nothing.</p>
+    <p class="prose"><strong>Renaming in Gmail.</strong> The Gmail list editor is plain text and cannot tell which line became which. Change only the name on that one line and save; if the same save also adds, removes, or moves lines, nothing is renamed.</p>
     <p class="prose"><strong>In Gmail,</strong> lists are edited as text, one item per line with a vertical bar between the columns, and choices show their short names (for example <code>business</code> for working hours only).</p>
 
     <h3 id="assignment">How a new ticket is assigned</h3>
@@ -164,7 +165,7 @@
         <tr><td><code>status</code></td><td>To the requester when the status changes</td></tr>
         <tr><td><code>resolved</code></td><td>To the requester when the ticket is resolved or closed</td></tr>
         <tr><td><code>reply</code></td><td>To the requester when the team replies</td></tr>
-        <tr><td><code>requesterReply</code></td><td>To the team when the requester replies</td></tr>
+        <tr><td><code>requesterReply</code></td><td>To the team when the requester replies, closes, or reopens a ticket</td></tr>
       </tbody>
     </table></div>
     <p class="prose">Subjects and bodies are plain text. The ticket's details are added under your text automatically. These placeholders are replaced with the ticket's own values:</p>

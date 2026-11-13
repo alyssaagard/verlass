@@ -2,6 +2,8 @@
  * Turns a planned notification into an email: subject, plain text, and HTML.
  * Templates are plain text with {{placeholders}}. Every value is escaped before it goes into
  * HTML, so nothing a person types into a ticket can change the email's markup.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 import { escapeHtml, htmlLines, safeUrl, accentFor, cleanLine, nameFromEmail } from "./text.js";
 import { teamMember } from "./settings.js";

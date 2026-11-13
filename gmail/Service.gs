@@ -8,17 +8,42 @@
  * Private install: this file runs in its own project as a web app owned by the help desk
  * account. The add-on sends each request to doPost with a Google identity token, so staff
  * never need access to the spreadsheet.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 
-var Service = (function () {
-  function zone_(settings) {
-    var tz = settings.general.timeZone || Session.getScriptTimeZone();
-    try {
+/**
+ * True when a time zone name is one the runtime knows. Utilities.formatDate does not reliably
+ * refuse an unknown name (it may quietly use GMT), so the name is checked with Intl, which the
+ * Apps Script V8 runtime provides and which throws for a name it does not know.
+ */
+function knownZone_(tz) {
+  if (!tz) return false;
+  try {
+    if (typeof Intl === "undefined") {
       Utilities.formatDate(new Date(), tz, "HH");
-      return tz;
-    } catch (e) {
-      return Session.getScriptTimeZone();
+      return true;
     }
+    new Intl.DateTimeFormat("en-US", { timeZone: tz });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+var Service = (function () {
+  /** The zone the help desk counts and shows times in: the setting, or this project's own zone. */
+  function zone_(settings) {
+    var tz = settings.general.timeZone;
+    return knownZone_(tz) ? tz : Session.getScriptTimeZone();
+  }
+
+  /** Warnings for an administrator: the settings' own, names tickets use that left the lists, and an unknown zone. */
+  function warnings_(settings, tickets) {
+    var out = Core.settingsWarnings(settings).concat(Core.orphanWarnings(settings, tickets));
+    var tz = settings.general.timeZone;
+    if (tz && !knownZone_(tz)) out.push('The time zone "' + tz + '" is not a known zone name, so times use the help desk\'s own zone, ' + Session.getScriptTimeZone() + ".");
+    return out;
   }
 
   var DOW = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
@@ -91,7 +116,7 @@ var Service = (function () {
     out.zone = zone_(settings);
     if (role === "admin") {
       out.sheetUrl = Store.url();
-      out.warnings = Core.settingsWarnings(settings).concat(Core.orphanWarnings(settings, tickets));
+      out.warnings = warnings_(settings, tickets);
     }
     return out;
   }
@@ -134,8 +159,13 @@ var Service = (function () {
     });
     if (!plan.ok) return plan;
     send_(plan.notifications, plan.ticket, settings, actor);
-    // The new ticket's details come back with it, so the card needs no second request.
-    return detail_(plan.ticket, actor, settings);
+    // The new ticket's details come back with it, so the card needs no second request. The
+    // ticket is saved by now, so a failure to read the details must never report it as unsent.
+    try {
+      return detail_(plan.ticket, actor, settings);
+    } catch (e) {
+      return { ok: true, ticket: plan.ticket, overdue: false, messages: [], activity: [] };
+    }
   }
 
   function list(payload, actor) {
@@ -191,7 +221,7 @@ var Service = (function () {
   function settingsGet(payload, actor) {
     var settings = Store.loadSettings(true);
     if (Core.roleOf(settings, actor.email) !== "admin") return fail_("Only an administrator can open the settings.");
-    return { ok: true, settings: settings, warnings: Core.settingsWarnings(settings).concat(Core.orphanWarnings(settings, Store.allTickets())), sheetUrl: Store.url() };
+    return { ok: true, settings: settings, warnings: warnings_(settings, Store.allTickets()), sheetUrl: Store.url() };
   }
 
   /**
@@ -211,20 +241,23 @@ var Service = (function () {
       Object.keys(p.templates || {}).forEach(function (key) {
         if (Core.TEMPLATE_KEYS.indexOf(key) !== -1) next.templates[key] = p.templates[key];
       });
-      // An item renamed in place is renamed wherever it is used: in rules and defaults here,
-      // and on stored tickets below. Otherwise old tickets would keep a name nobody knows.
-      var plan = Core.renamePlan(current, Core.normalizeSettings(next));
+      // A renamed item is renamed wherever it is used: in rules and defaults here, and on stored
+      // tickets below. The text editor has no rows to follow, so only a rename that changed
+      // nothing else in the list is recognized (see Core.renamePlan). renames: {} turns this off.
+      var plan = Core.renamePlan(current, Core.normalizeSettings(next), p.renames && typeof p.renames === "object" ? p.renames : undefined);
       if (Core.hasRenames(plan)) next = Core.applyRenamesToSettings(next, plan);
       next = Core.normalizeSettings(next);
       if (Core.roleOf(next, actor.email) !== "admin") return fail_("That change would remove your own administrator access, so it was not saved.");
-      var saved = Store.saveSettings(next);
+      // Tickets first: if this is cut short, the settings still hold the old names, and saving
+      // again finds the same renames and finishes the rest.
       var renamedTickets = Core.hasRenames(plan) ? Store.renameTickets(plan) : 0;
+      var saved = Store.saveSettings(next);
       return {
         ok: true,
         settings: saved,
         adjusted: Core.adjustedFields(p.general, saved),
         renamedTickets: renamedTickets,
-        warnings: Core.settingsWarnings(saved).concat(Core.orphanWarnings(saved, Store.allTickets())),
+        warnings: warnings_(saved, Store.allTickets()),
         sheetUrl: Store.url(),
       };
     });
@@ -242,8 +275,15 @@ var Service = (function () {
       var who = { email: email, name: Core.cleanLine(actor.name, 80) };
       var result = ACTIONS[action](payload || {}, who);
       // A card usually needs the person's role and the settings along with its answer. Sending
-      // them together saves a second request, which matters most in the Private install.
-      if (payload && payload.withBoot && action !== "boot" && action !== "setup" && Store.exists()) result.boot = boot({}, who);
+      // them together saves a second request, which matters most in the Private install. The
+      // action is already done, so a failure here only leaves the card to ask for them itself.
+      if (payload && payload.withBoot && action !== "boot" && action !== "setup" && Store.exists()) {
+        try {
+          result.boot = boot({}, who);
+        } catch (e) {
+          result.boot = null;
+        }
+      }
       return result;
     } catch (e) {
       var message = String((e && e.message) || e);
@@ -286,10 +326,15 @@ var Identity = (function () {
     if (!(seconds > 0)) throw new Error("The sign-in token has expired. Close the add-on and open it again.");
 
     var props = PropertiesService.getScriptProperties();
-    var domain = String(props.getProperty(PROP_DOMAIN) || "").trim().toLowerCase();
-    // Google's own domain claim decides. The part after the @ is not proof: a personal Google
-    // account can be registered with any address.
-    if (domain && String(info.hd || "").toLowerCase() !== domain) throw new Error("This help desk only accepts accounts from " + domain + ".");
+    // Google's own domain claim (hd) decides. The part after the @ is not proof: a personal Google
+    // account can be registered with any address. hd names the organization's primary domain,
+    // also for people whose addresses use another of its domains. Several may be listed.
+    var domains = String(props.getProperty(PROP_DOMAIN) || "").toLowerCase().split(",").map(function (d) { return d.trim(); }).filter(Boolean);
+    var hd = String(info.hd || "").toLowerCase();
+    if (domains.length && domains.indexOf(hd) === -1) {
+      if (!hd) throw new Error("This help desk accepts only Google Workspace accounts from " + domains.join(", ") + ", and personal Google accounts are not accepted.");
+      throw new Error("Your account belongs to the Google Workspace domain " + hd + ", which this help desk does not accept. ALLOWED_DOMAIN must list the organization's primary domain.");
+    }
 
     var audience = props.getProperty(PROP_AUDIENCE);
     if (audience) {

@@ -1,0 +1,9 @@
+# Every text file uses LF line endings on every system, so the generated files and the
+# download packages are the same bytes everywhere (a Windows checkout would otherwise
+# turn them into CRLF and fail npm run check).
+* text=auto eol=lf
+*.zip binary
+*.png binary
+*.ico binary
+*.woff binary
+*.woff2 binary

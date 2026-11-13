@@ -2,6 +2,8 @@
  * A small Microsoft Graph client: one function to send a request with the signed-in person's
  * token, waiting and trying again when Graph asks for that, and one to read every page of a
  * list.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 
 const GRAPH = "https://graph.microsoft.com/v1.0";

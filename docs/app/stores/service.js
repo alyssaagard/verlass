@@ -26,6 +26,8 @@
  *   adminInfo()                  -> extra facts for the settings screen (optional)
  *   renameTickets(plan)          -> renames statuses, priorities, categories, and locations on
  *                                   stored tickets; resolves to how many tickets changed
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 import { normalizeEmail, cleanLine, nameFromEmail } from "../core/text.js";
 import { normalizeSettings, defaultSettings, settingsWarnings, publicSettings, roleOf, teamMember, TEMPLATE_KEYS, renamePlan, hasRenames, applyRenamesToSettings, adjustedFields, orphanWarnings } from "../core/settings.js";
@@ -179,10 +181,15 @@ export function makeService(backend) {
     const p = payload || {};
     const ticket = stamp(await backend.getTicket(p.id), s);
     if (!ticket || !canSee(ticket, who.email, s)) return fail("That " + s.general.ticketWord + " was not found.");
-    const stale = "Someone else changed this " + s.general.ticketWord + " a moment ago. Open it again to see the latest, then make your change.";
+    const stale = "Someone else changed this " + s.general.ticketWord + " a moment ago. The latest is shown now and what you typed is kept, so check it and save again.";
     if (p.expectedUpdatedAt && ticket.updatedAt && p.expectedUpdatedAt !== ticket.updatedAt) return fail(stale);
     const plan = planUpdate(ticket, p.changes, who, s, { now: new Date(), localParts: partsFor(s) });
     if (!plan.ok) return plan;
+    // When this person cannot store internal notes at all, say so before anything is saved, so
+    // the note stays on their screen and the activity log never mentions a note that is not there.
+    if (plan.messages.some((m) => m.visibility === "internal") && backend.canAddNotes && !(await backend.canAddNotes())) {
+      return fail(backend.notesProblem ? backend.notesProblem() : "Internal notes cannot be saved with your account.");
+    }
     let mailProblems = [];
     let noteProblem = "";
     if (plan.changed) {
@@ -231,17 +238,26 @@ export function makeService(backend) {
     for (const key of Object.keys(p.general || {})) next.general[key] = p.general[key];
     for (const id of Object.keys(p.lists || {})) if (listById(id)) next[id] = p.lists[id];
     for (const key of Object.keys(p.templates || {})) if (TEMPLATE_KEYS.includes(key)) next.templates[key] = p.templates[key];
-    // An item renamed in place is renamed wherever it is used: in rules and defaults here, and
-    // on stored tickets below. Otherwise old tickets would be left with a name nobody knows.
-    const plan = renamePlan(current, normalizeSettings(next));
+    // A renamed item is renamed wherever it is used: in rules and defaults here, and on stored
+    // tickets below. The web editor says which row became which (p.renames); without that, only
+    // a rename that changed nothing else in the list is recognized.
+    const plan = renamePlan(current, normalizeSettings(next), p.renames && typeof p.renames === "object" ? p.renames : undefined);
     if (hasRenames(plan)) next = applyRenamesToSettings(next, plan);
     next = normalizeSettings(next);
     if (roleOf(next, who.email) !== "admin") return fail("That change would remove your own administrator access, so it was not saved.");
+    // Tickets are renamed before the settings are saved. If renaming stops part way, the settings
+    // still hold the old names, so saving again finds the same renames and finishes the rest.
+    let renamedTickets = 0;
+    if (hasRenames(plan) && backend.renameTickets) {
+      try {
+        renamedTickets = await backend.renameTickets(plan);
+      } catch (e) {
+        return fail("Some tickets could not be renamed, so the settings were not saved. Save again to finish. (" + String((e && e.message) || e) + ")");
+      }
+    }
     await backend.saveSettings(next);
     cachedSettings = next;
     cachedAt = Date.now();
-    let renamedTickets = 0;
-    if (hasRenames(plan) && backend.renameTickets) renamedTickets = await backend.renameTickets(plan);
     return {
       ok: true,
       settings: next,

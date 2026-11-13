@@ -8,6 +8,8 @@
  *
  * The add-in asks Outlook only for ReadItem: it can read the message that is open (to turn it
  * into a ticket) and nothing else in the mailbox.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 import { configQuery } from "../hosts/config.js";
 

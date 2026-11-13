@@ -1,6 +1,8 @@
 /**
  * Small helpers for building the screens: elements, form fields, dates, and the theme.
  * Text typed by people is always placed with textContent, never as HTML.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 
 /** Creates an element. attrs: class, text, on<event> handlers, and plain attributes. */

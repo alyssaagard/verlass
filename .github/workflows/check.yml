@@ -10,16 +10,25 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # The lowest supported version and the current long-term support version.
+        node: [22, 24]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: ${{ matrix.node }}
       - name: Install xmllint
         run: sudo apt-get update && sudo apt-get install -y libxml2-utils
       - name: Build generated files
         run: npm run build
       - name: Generated files are committed and up to date
-        run: git diff --exit-code -- gmail/Core.gs gmail/appsscript.json docs
+        # git add -N makes new, never-committed files visible to git diff, so a generated file
+        # that was left out of the commit fails here too.
+        run: |
+          git add -N gmail/Core.gs gmail/appsscript.json docs
+          git status --short -- gmail/Core.gs gmail/appsscript.json docs
+          git diff --exit-code -- gmail/Core.gs gmail/appsscript.json docs
       - name: Run checks
         run: npm run check

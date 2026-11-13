@@ -13,6 +13,8 @@
  *   interactive  signs in with a window; call it from a button press
  *   elevated     a one-time token with a higher permission, for the administrator's setup;
  *                in the browser app it is kept in memory only and never stored
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 import { configQuery } from "./config.js";
 
@@ -51,7 +53,11 @@ export async function makeAuth(config, options) {
       const result = await pca.acquireTokenSilent(who ? { scopes, account: who } : { scopes });
       return result.accessToken;
     } catch (e) {
-      return null;
+      // Only an answer that says the person must sign in or consent means the sign-in ended.
+      // Anything else, such as a dropped connection, is a problem to report, not a reason to
+      // send the person to sign in again.
+      if (e instanceof msal.InteractionRequiredAuthError || (e && /interaction_required|login_required|consent_required|no_account|no_tokens_found/i.test(String(e.errorCode || "")))) return null;
+      throw new Error("Microsoft 365 could not be reached. Check your connection and try again.");
     }
   }
 
@@ -65,7 +71,8 @@ export async function makeAuth(config, options) {
   /**
    * The administrator's one-time setup token. In a browser tab it comes from a second sign-in
    * client that keeps everything in memory, so a token with the higher permission is never
-   * written to the browser's storage. Inside Outlook, Outlook holds the token.
+   * written to the browser's storage. With nested sign-in, Outlook holds the token. In the
+   * Office dialog, the dialog page keeps it in memory too (see the temp flag in auth.html).
    */
   async function elevated(scopes) {
     if (nested) return interactive(scopes);
@@ -101,9 +108,10 @@ function dialogAuth(config, appBase, loginHint) {
     return hit && hit.expires - Date.now() > 120000 ? hit.token : null;
   };
 
-  function open(scopes) {
+  /** temporary: keep this sign-in in the dialog's memory only (for the setup permission). */
+  function open(scopes, temporary) {
     return new Promise((resolve, reject) => {
-      const url = appBase + "auth.html?" + configQuery(config) + "&scopes=" + encodeURIComponent(scopes.join(" ")) + (loginHint ? "&hint=" + encodeURIComponent(loginHint) : "");
+      const url = appBase + "auth.html?" + configQuery(config) + "&scopes=" + encodeURIComponent(scopes.join(" ")) + (loginHint ? "&hint=" + encodeURIComponent(loginHint) : "") + (temporary ? "&temp=1" : "");
       Office.context.ui.displayDialogAsync(url, { height: 60, width: 30 }, (result) => {
         if (result.status !== Office.AsyncResultStatus.Succeeded) {
           reject(new Error("The sign-in window could not be opened. Allow pop-up windows for Outlook and try again."));
@@ -134,7 +142,7 @@ function dialogAuth(config, appBase, loginHint) {
     mode: "dialog",
     silent: async (scopes) => fresh(scopes),
     interactive: open,
-    elevated: open,
+    elevated: (scopes) => open(scopes, true),
     signOut: null,
   };
 }

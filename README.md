@@ -46,7 +46,7 @@ Try all of it, with no install and no sign-in, at **[verlass.alyssaagard.dev/dem
 
 ## Status
 
-Version 2.0 is a complete rebuild. Its rules, the Gmail add-on, and the Microsoft 365 backend are covered by automated tests that run the real code against simulated Google and Microsoft services, and the screens are driven in headless Chrome. It has not yet been run in a live Gmail account or a live Microsoft 365 tenant; [MAINTAINING.md](MAINTAINING.md) lists exactly what to try. Please [report what you find](https://github.com/alyssaagard/verlass/issues).
+Version 2.0 is a complete rebuild. Its rules, the Gmail add-on, and the Microsoft 365 backend are covered by automated tests that run the real code against simulated Google and Microsoft services, and the screens are driven in headless Chrome. It has not yet been run in a live Gmail account or a live Microsoft 365 tenant; [MAINTAINING.md](MAINTAINING.md) lists exactly what to try. Please [report what you find](https://github.com/alyssaagard/verlass/issues). Report security problems privately, as [SECURITY.md](SECURITY.md) describes.
 
 ## Privacy
 
@@ -87,7 +87,7 @@ The browser code is plain JavaScript modules with no frameworks. The only third-
 
 ## Development
 
-You need Node.js 18 or later.
+You need Node.js 22 or later.
 
 ```bash
 npm run build    # writes Core.gs, the website pages, the Outlook manifest, and the packages

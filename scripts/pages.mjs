@@ -89,21 +89,28 @@ const APP_CSS = `<link rel="stylesheet" href="{root}app/ui/app.css">`;
 
 /** The script that runs the demo help desk inside an element with id "demo-app". */
 const DEMO_SCRIPT = `<script type="module">
-    import { mountApp } from "{root}app/ui/app.js";
-    import { makeService } from "{root}app/stores/service.js";
-    import { makeDemoBackend } from "{root}app/stores/demo.js";
-    let storage = null;
-    try { storage = window.sessionStorage; storage.getItem("x"); } catch (e) { storage = null; }
-    const backend = makeDemoBackend({ storage });
-    const app = mountApp(document.getElementById("demo-app"), {
-      service: makeService(backend),
-      host: { kind: "demo", name: "${NAME}", siteUrl: "{root}".replace(/\\/$/, "") || ".", demo: backend, embedded: true, onReset: () => draw() },
-    });
-    const buttons = Array.from(document.querySelectorAll("[data-persona]"));
-    function draw() { buttons.forEach((b) => b.setAttribute("aria-pressed", b.dataset.persona === backend.persona() ? "true" : "false")); }
-    buttons.forEach((b) => b.addEventListener("click", async () => { backend.setPersona(b.dataset.persona); draw(); await app.home(); }));
-    draw();
-    window.__demo = { app, backend };
+    // The modules load one by one, so a failure (for example right after a release, while old
+    // files are still cached) shows a message instead of an empty pane.
+    const pane = document.getElementById("demo-app");
+    Promise.all([import("{root}app/ui/app.js"), import("{root}app/stores/service.js"), import("{root}app/stores/demo.js")])
+      .then(([ui, svc, demo]) => {
+        let storage = null;
+        try { storage = window.sessionStorage; storage.getItem("x"); } catch (e) { storage = null; }
+        const backend = demo.makeDemoBackend({ storage });
+        const app = ui.mountApp(pane, {
+          service: svc.makeService(backend),
+          host: { kind: "demo", name: "${NAME}", siteUrl: "{root}".replace(/\\/$/, "") || ".", demo: backend, embedded: true, onReset: () => draw() },
+        });
+        const buttons = Array.from(document.querySelectorAll("[data-persona]"));
+        function draw() { buttons.forEach((b) => b.setAttribute("aria-pressed", b.dataset.persona === backend.persona() ? "true" : "false")); }
+        buttons.forEach((b) => b.addEventListener("click", async () => { backend.setPersona(b.dataset.persona); draw(); await app.home(); }));
+        draw();
+        window.__demo = { app, backend };
+      })
+      .catch(() => {
+        pane.textContent = "The demo could not load. Reload the page in a minute.";
+        pane.className = "pane-message";
+      });
   </script>`;
 
 export function homePage() {
@@ -123,7 +130,7 @@ export function homePage() {
         <p class="notice small"><strong>Your data stays yours.</strong> Tickets live in a Google Sheet in your own Google account, or in a list in your own Microsoft 365. ${NAME} has no server, no account to create, and no tracking.</p>
       </div>
       <div class="hero-art">
-        <div class="pane" aria-label="A live ${NAME} demo with sample tickets"><div id="demo-app"></div></div>
+        <div class="pane" role="region" aria-label="A live ${NAME} demo with sample tickets"><div id="demo-app"><noscript><p class="pane-message">The live demo needs JavaScript. The install guide works without it.</p></noscript></div></div>
       </div>
     </section>
 
@@ -189,7 +196,7 @@ export function demoPage() {
         <p class="muted small">Changes last until you close this tab. Choose <strong>Reset the demo</strong> in the menu to start again.</p>
         <div class="btn-row"><a class="btn btn-primary" href="{root}install/">Install ${NAME}</a></div>
       </div>
-      <div class="pane tall" aria-label="${NAME} demo"><div id="demo-app"></div></div>
+      <div class="pane tall" role="region" aria-label="${NAME} demo"><div id="demo-app"><noscript><p class="pane-message">The live demo needs JavaScript. The install guide works without it.</p></noscript></div></div>
     </div>`,
   });
 }
@@ -219,8 +226,18 @@ function appPage(kind) {
   <div id="app"><p style="padding:16px;color:#9DAAA2;font-family:sans-serif">Loading ${NAME}...</p></div>
   <noscript><p style="padding:16px">${NAME} needs JavaScript.</p></noscript>
   <script type="module">
-    import { startM365 } from "./hosts/m365.js";
-    startM365(document.getElementById("app"), { kind: "${kind}", name: "${NAME}", siteUrl: new URL("..", window.location.href).href.replace(/\\/$/, "") });
+    // A failure to load or start shows a message instead of "Loading" forever.
+    const root = document.getElementById("app");
+    const failed = () => {
+      root.textContent = "";
+      const p = document.createElement("p");
+      p.style.padding = "16px";
+      p.textContent = "${NAME} could not load. Close this panel and open it again in a minute.";
+      root.appendChild(p);
+    };
+    import("./hosts/m365.js")
+      .then((m) => m.startM365(root, { kind: "${kind}", name: "${NAME}", siteUrl: new URL("..", window.location.href).href.replace(/\\/$/, "") }))
+      .catch(failed);
   </script>
 </body>
 </html>
@@ -280,7 +297,7 @@ export function authPage() {
         var q = new URLSearchParams(window.location.search);
         var saved = null;
         if (q.get("client")) {
-          saved = { client: q.get("client"), tenant: q.get("tenant") || "", scopes: (q.get("scopes") || "User.Read").split(" ").filter(Boolean), hint: String(q.get("hint") || "").toLowerCase() };
+          saved = { client: q.get("client"), tenant: q.get("tenant") || "", scopes: (q.get("scopes") || "User.Read").split(" ").filter(Boolean), hint: String(q.get("hint") || "").toLowerCase(), temp: q.get("temp") === "1" };
         } else {
           try { saved = JSON.parse(window.sessionStorage.getItem(KEY) || "null"); } catch (e) { saved = null; }
         }
@@ -291,7 +308,8 @@ export function authPage() {
         try { window.sessionStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) { /* The redirect below then cannot finish; the error is reported. */ }
         msal.createStandardPublicClientApplication({
           auth: { clientId: saved.client, authority: "https://login.microsoftonline.com/" + saved.tenant, redirectUri: window.location.origin + window.location.pathname },
-          cache: { cacheLocation: "localStorage" }
+          // The one-time setup permission is kept in this page's memory only, never in storage.
+          cache: { cacheLocation: saved.temp ? "memoryStorage" : "localStorage" }
         }).then(function (pca) {
           return pca.handleRedirectPromise().then(function (result) {
             if (result) return result;
@@ -406,8 +424,8 @@ export function installPage() {
         <li>Download <code>${SLUG}-gmail-private.zip</code> and unzip it. Sign in to Google as the account that should own the help desk.</li>
         <li><strong>The service.</strong> At <a href="https://script.google.com">script.google.com</a> create a project named <strong>${NAME} service</strong>. Show the manifest file as in the Standard install, add the script files <code>Core</code>, <code>Service</code>, and <code>Store</code> from the package's <code>service</code> folder, delete <code>Code.gs</code>, and replace <code>appsscript.json</code> with the one in that folder.</li>
         <li>Select <strong>Deploy</strong>, then <strong>New deployment</strong>. Choose the type <strong>Web app</strong>, set <strong>Execute as</strong> to <strong>Me</strong> and <strong>Who has access</strong> to <strong>Anyone</strong>, and select <strong>Deploy</strong>. Approve the permissions, then copy the <strong>Web app URL</strong>. It ends in <code>/exec</code>.</li>
-        <li>Recommended: in <strong>Project Settings</strong>, under <strong>Script properties</strong>, add a property named <code>ALLOWED_DOMAIN</code> with your domain, for example <code>example.org</code>. The service then refuses accounts from anywhere else.</li>
-        <li><strong>The add-on.</strong> Create a second project named <strong>${NAME}</strong>. Add the script files <code>Addon</code>, <code>Cards</code>, <code>Core</code>, and <code>SettingsCards</code> from the package's <code>addon</code> folder, delete <code>Code.gs</code>, and replace <code>appsscript.json</code> with the one in that folder.</li>
+        <li>Recommended for Google Workspace: in <strong>Project Settings</strong>, under <strong>Script properties</strong>, add a property named <code>ALLOWED_DOMAIN</code> with your organization's <strong>primary</strong> domain, for example <code>example.org</code>. That is the domain shown first in the Google Admin console under <strong>Account</strong>, <strong>Domains</strong>, even when people use addresses at another of its domains. Separate several with commas. The service then refuses accounts from anywhere else. Do not set it for free Gmail accounts, which have no organization domain.</li>
+        <li><strong>The add-on.</strong> Create a second project named <strong>${NAME}</strong> and show its manifest file as in the Standard install. Add the script files <code>Addon</code>, <code>Cards</code>, <code>Core</code>, and <code>SettingsCards</code> from the package's <code>addon</code> folder, delete <code>Code.gs</code>, and replace <code>appsscript.json</code> with the one in that folder. Save.</li>
         <li>In this project's <strong>Project Settings</strong>, under <strong>Script properties</strong>, add a property named <code>SERVICE_URL</code> and paste the web app URL from step 3.</li>
         <li>Select <strong>Deploy</strong>, then <strong>Test deployments</strong>, then <strong>Install</strong>. Open Gmail as the owner account, open ${NAME}, authorize it, and select <strong>Create the help desk</strong>.</li>
         <li>Open <strong>Settings</strong>, then <strong>Team</strong>, and add your team. Do not share the Sheet with anyone who should not read every ticket.</li>
@@ -474,7 +492,7 @@ export function installPage() {
       <p class="notice"><strong>New in version ${VERSION}.</strong> The Outlook add-in has been tested against a simulated Microsoft 365, not yet in a live tenant. Try it with a few people first, and please <a href="${REPO_URL}/issues">report what you find</a>.</p>
 
       <h3>What an administrator does, once</h3>
-      <p class="prose">You need a <strong>Global Administrator</strong> for granting consent, for creating the lists, and for deploying the add-in. The same person must be an Owner of the help desk site.</p>
+      <p class="prose">A <strong>Global Administrator</strong> can do every step. An organization that keeps that role for emergencies can share the work, using the roles Microsoft names for each task: an <strong>Application Administrator</strong> or <strong>Cloud Application Administrator</strong> for registering the app and granting consent, a <strong>SharePoint Administrator</strong> who can also approve the setup permission for creating the lists, and an <strong>Exchange Administrator</strong> for deploying the add-in. Whoever creates the lists must be an Owner of the help desk site.</p>
       <ol class="steps">
         <li><strong>Create a SharePoint site for the help desk.</strong> In SharePoint select <strong>Create site</strong>, choose <strong>Team site</strong>, name it, for example <strong>Help Desk</strong>, and set its privacy to <strong>Private</strong>. Make the help desk team <strong>Owners</strong> of the site. Then select the gear, <strong>Site permissions</strong>, <strong>Advanced permissions settings</strong>, open the <strong>Visitors</strong> group, select <strong>New</strong>, and add <strong>Everyone except external users</strong>. Do not add staff as Members: Members can change lists, including the help desk's settings. Copy the site's address, such as <code>https://contoso.sharepoint.com/sites/helpdesk</code>.</li>
         <li><strong>Register the app.</strong> In the <a href="https://entra.microsoft.com">Microsoft Entra admin center</a>, go to <strong>App registrations</strong> and select <strong>New registration</strong>. Name it <strong>${NAME}</strong>, keep <strong>Accounts in this organizational directory only</strong>, and under <strong>Redirect URI</strong> choose <strong>Single-page application (SPA)</strong> and enter <code>brk-multihub://${host}</code>. Select <strong>Register</strong>.</li>
@@ -506,8 +524,15 @@ export function installPage() {
       </form>
 
       <ol class="steps" start="6" style="counter-reset: step 5">
-        <li><strong>Create the lists.</strong> Select <strong>Open the browser app to finish setup</strong> above and sign in as a Global Administrator who is also an Owner of the site. Open <strong>I am the administrator</strong> and select <strong>1. Create the lists</strong>. Microsoft asks you to approve one higher permission, <code>Sites.FullControl.All</code> (or <code>Sites.Manage.All</code> if you chose the wider access above). Leave <strong>Consent on behalf of your organization</strong> unchecked, so it applies to your account only. ${NAME} uses it to give the add-in access to this one site and to create three lists, and does not store it. Then enter your organization's name and select <strong>2. Create the help desk</strong>.</li>
-        <li id="outlook-revoke"><strong>Remove the setup permission.</strong> It is no longer needed. In the Microsoft Entra admin center, open <strong>Enterprise applications</strong>, choose <strong>${NAME}</strong>, then <strong>Permissions</strong>, and on the <strong>User consent</strong> tab remove that permission. Microsoft's page <a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/manage-application-permissions">Review permissions granted to enterprise applications</a> has the current steps.</li>
+        <li><strong>Create the lists.</strong> Select <strong>Open the browser app to finish setup</strong> above and sign in as the administrator described above, who must also be an Owner of the site. Open <strong>I am the administrator</strong> and select <strong>1. Create the lists</strong>. Microsoft asks you to approve one higher permission, <code>Sites.FullControl.All</code> (or <code>Sites.Manage.All</code> if you chose the wider access above). Leave <strong>Consent on behalf of your organization</strong> unchecked, so it applies to your account only. ${NAME} uses it to give the add-in access to this one site and to create three lists, and does not store it. Then enter your organization's name and select <strong>2. Create the help desk</strong>.</li>
+        <li id="outlook-revoke"><strong>Remove the setup permission.</strong> It is no longer needed. The Microsoft Entra admin center lists it under <strong>Enterprise applications</strong>, <strong>${NAME}</strong>, <strong>Permissions</strong>, <strong>User consent</strong>, but cannot remove a single person's consent there, so use <a href="https://developer.microsoft.com/graph/graph-explorer">Graph Explorer</a>, signed in as the same administrator:
+          <ol>
+            <li>Allow Graph Explorer the permission <code>DelegatedPermissionGrant.ReadWrite.All</code> when it asks (under <strong>Modify permissions</strong>).</li>
+            <li>Run <code>GET https://graph.microsoft.com/v1.0/servicePrincipals?$filter=appId eq 'APPLICATION-ID'&amp;$select=id</code> with your application (client) ID, and copy the <code>id</code> it returns.</li>
+            <li>Run <code>GET https://graph.microsoft.com/v1.0/oauth2PermissionGrants?$filter=clientId eq 'THAT-ID'</code>. Find the grant whose <code>consentType</code> is <code>Principal</code> and whose <code>scope</code> contains <code>Sites.FullControl.All</code> (or <code>Sites.Manage.All</code>), and copy its <code>id</code>.</li>
+            <li>If that grant holds nothing else you need, run <code>DELETE https://graph.microsoft.com/v1.0/oauth2PermissionGrants/GRANT-ID</code>. Otherwise run <code>PATCH</code> on the same address with the body <code>{"scope": "..."}</code>, listing the scopes to keep, separated by spaces.</li>
+          </ol>
+          Microsoft's page <a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/manage-application-permissions">Review permissions granted to enterprise applications</a> also shows a PowerShell way. These steps follow Microsoft's documentation and have not yet been tried in a live tenant.</li>
         <li id="outlook-permissions"><strong>Set who can see what.</strong> On the site, open <strong>Site contents</strong> and for each list choose <strong>Settings</strong>:
           <ul>
             <li><strong>Help Desk Tickets</strong>: under <strong>Advanced settings</strong>, <strong>Item-level Permissions</strong>, choose <strong>Read items that were created by the user</strong> and <strong>Create items and edit items that were created by the user</strong>. Under <strong>Permissions for this list</strong>, stop inheriting permissions and grant <strong>Everyone except external users</strong> the level <strong>Contribute</strong>. Site Owners keep Full Control, which is what lets the team see every ticket.</li>
@@ -628,7 +653,8 @@ export function helpPage() {
       </tbody>
     </table></div>
     <p class="prose">New help desks start from one of these presets: ${PRESETS.map((p) => esc(p.name)).join(", ")}. A preset fills the categories and locations and sets the help desk's name and the location label; rename, remove, and add items freely. In Outlook and the browser app, an administrator can load another preset later.</p>
-    <p class="prose"><strong>Renaming.</strong> Tickets store the names of their status, priority, category, and location. To rename one, change its name in place and save: ${NAME} renames it on every ticket and rule that uses it and tells you how many tickets changed. If you remove an item instead, its tickets keep the old name, and Settings lists them under "To review". A ticket whose status is no longer on the list counts as open.</p>
+    <p class="prose"><strong>Renaming.</strong> Tickets store the names of their status, priority, category, and location. To rename one, change its name and save: ${NAME} renames it on every ticket and rule that uses it and tells you how many tickets changed. A status keeps its kind when renamed, so a rename never reopens or finishes tickets. If you remove an item instead, its tickets keep the old name, and Settings lists them under "To review"; a ticket whose status is no longer on the list counts as open. Loading a preset renames nothing.</p>
+    <p class="prose"><strong>Renaming in Gmail.</strong> The Gmail list editor is plain text and cannot tell which line became which. Change only the name on that one line and save; if the same save also adds, removes, or moves lines, nothing is renamed.</p>
     <p class="prose"><strong>In Gmail,</strong> lists are edited as text, one item per line with a vertical bar between the columns, and choices show their short names (for example <code>business</code> for working hours only).</p>
 
     <h3 id="assignment">How a new ticket is assigned</h3>
@@ -683,7 +709,7 @@ export function privacyPage() {
       <h2>Where your information is kept</h2>
       <ul>
         <li><strong>Gmail.</strong> Tickets, messages, the activity log, and settings are rows in one Google Sheet in the Google Drive of the person or account that set up the help desk. The add-on is Apps Script code that you copy into your own Google account and that runs there. Email notices are sent by Google: from your own account in a Standard install, and from the help desk owner's account in a Private install.</li>
-        <li><strong>Outlook.</strong> Tickets, notes, and settings are items in three lists on a SharePoint site in your organization's Microsoft 365. The add-in's code is loaded from this website each time it opens, runs in Outlook on your device, and talks only to Microsoft Graph, as you. Email notices are sent from your own mailbox. The add-in's address includes your organization's application ID, tenant ID, and site address, which GitHub, as this site's host, can see. An organization that prefers can host its own copy of the site; the code is public.</li>
+        <li><strong>Outlook.</strong> Tickets, notes, and settings are items in three lists on a SharePoint site in your organization's Microsoft 365. The add-in's code is loaded from this website each time it opens, runs in Outlook on your device, and talks only to Microsoft's sign-in service and to Microsoft Graph, as you. Email notices are sent from your own mailbox. The add-in's address includes your organization's application ID, tenant ID, and site address, which GitHub, as this site's host, can see. An organization that prefers can host its own copy of the site; the code is public.</li>
         <li><strong>The demo.</strong> The sample help desk on this site lives in your browser tab and is erased when you close it.</li>
       </ul>
       <p>Who can read a ticket is decided by your own Google or Microsoft 365 permissions, as described in the <a href="{root}install/">install guide</a>. Your organization's own privacy rules apply to what people write in tickets.</p>
@@ -699,7 +725,8 @@ export function privacyPage() {
       <h2>This website</h2>
       <ul>
         <li>The site and the Outlook add-in's pages are static files hosted on GitHub Pages. GitHub, as the host, receives the usual technical information any web server sees, such as your IP address. See <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's privacy statement</a>.</li>
-        <li>The site sets no cookies. It remembers two things in your browser's own storage: your theme choice, and, for the browser version of the Outlook help desk, your organization's connection settings. Signing in to Microsoft 365 stores Microsoft's sign-in tokens in your browser. None of this is sent to ${NAME}'s publisher.</li>
+        <li>The site sets no cookies. It keeps a few things in your browser's own storage: your theme choice; for the Outlook add-in and the browser app, your organization's connection settings; while the older Outlook sign-in window is open, its settings and your email address, for that window only; and, in the live demo, the sample help desk for that tab. Signing in to Microsoft 365 stores Microsoft's sign-in tokens in your browser. None of this is sent to ${NAME}'s publisher.</li>
+        <li>If your organization sets a logo address, the logo is loaded from the server that address names, which sees your IP address as any web server does.</li>
         <li>Fonts and Microsoft's sign-in library are served from this site. The Outlook pages load Microsoft's Office script from Microsoft.</li>
       </ul>
 

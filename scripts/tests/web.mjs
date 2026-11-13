@@ -69,9 +69,14 @@ function makeTenant() {
     if (!p.startsWith(sitePrefix)) return error(404, "itemNotFound", "Site not found");
     const rest = p.slice(sitePrefix.length);
 
-    if (rest === "/permissions") {
+    if (rest === "/permissions" || /^\/permissions\/perm\d+$/.test(rest)) {
       if (!scopes.includes("Sites.FullControl.All") || !isOwner) return error(403, "accessDenied", "Needs Sites.FullControl.All");
       if (method === "GET") return json(200, { value: tenant.grants.map((g, i) => ({ id: "perm" + i, roles: g.roles, grantedToIdentitiesV2: g.grantedToIdentities })) });
+      if (method === "PATCH") {
+        const n = Number(/perm(\d+)$/.exec(rest)[1]);
+        tenant.grants[n].roles = body.roles;
+        return json(200, { id: "perm" + n, roles: body.roles });
+      }
       tenant.granted = true;
       tenant.grant = body;
       tenant.grants.push(body);
@@ -136,18 +141,35 @@ function makeTenant() {
         // Someone else saves the item in the instant after it was read.
         tenant.changeAfterNextRead = false;
         item.version++;
+        item.fields.ChangedAt = "2099-01-01T00:00:00.000Z";
       }
       return answer;
     }
     if (method === "PATCH" && lm[3]) {
       if (kind === "settings" && !isOwner) return error(403, "accessDenied", "Access denied");
+      if (kind === "tickets" && tenant.failTicketPatches > 0) {
+        tenant.failTicketPatches--;
+        return error(503, "serviceNotAvailable", "Try later");
+      }
       const ifMatch = init.headers["If-Match"];
       if (ifMatch && ifMatch !== '"' + item.id + "," + item.version + '"') return error(412, "notAllowed", "Precondition failed");
       const bad = badField(body);
       if (bad) return error(400, "invalidRequest", "Field '" + bad + "' is not recognized");
+      if (tenant.beforePatch) {
+        // A colleague's change lands just before this one.
+        const hook = tenant.beforePatch;
+        tenant.beforePatch = null;
+        hook(item);
+        if (ifMatch && ifMatch !== '"' + item.id + "," + item.version + '"') return error(412, "notAllowed", "Precondition failed");
+      }
       Object.assign(item.fields, body);
       item.version++;
       item.modified = new Date().toISOString();
+      if (tenant.failAfterWrite > 0) {
+        // The change is stored, but the answer is lost on the way back.
+        tenant.failAfterWrite--;
+        return json(504, { error: { code: "gatewayTimeout", message: "Gateway timeout" } }, { "Retry-After": "0.01" });
+      }
       return json(200, item.fields);
     }
     return error(405, "notSupported", "Unsupported");
@@ -237,7 +259,9 @@ export async function run({ ROOT, check, load, wellFormed }) {
   check(xml.includes("MobileMessageReadCommandSurface") && xml.includes("MessageReadCommandSurface") && xml.includes("<SupportsPinning>true</SupportsPinning>"), "desktop, mobile, and pinning are declared");
   check(xml.includes("VersionOverridesV1_0") && xml.includes("VersionOverridesV1_1"), "both version override blocks are present");
   for (const m of xml.matchAll(/assets\/icons\/(icon-\d+\.png)/g)) check(fs.existsSync(path.join(ROOT, "docs/assets/icons", m[1])), `the manifest's ${m[1]} exists`);
-  for (const m of xml.matchAll(/resid="([^"]+)"/g)) check(xml.includes(`id="${m[1]}"`), `manifest resource ${m[1]} is defined`);
+  const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  for (const m of xml.matchAll(/resid="([^"]+)"/g)) check(new RegExp(`<bt:(Image|Url|String)\\s+id="${escRe(m[1])}"`).test(xml), `manifest resource ${m[1]} is defined`);
+  check(!new RegExp(`<bt:(Image|Url|String)\\s+id="Icon\\.16"`).test(xml.replace(/<bt:Image id="Icon\.16"[^>]*\/>/g, "")), "the resource check would notice a missing definition");
   check(/<Description DefaultValue="[^"]{20,250}"\/>/.test(xml), "the description fits Outlook's limit");
   const bare = outlookManifest(MANIFEST_INFO, null);
   check(bare.includes(`${MANIFEST_INFO.siteUrl}/app/outlook.html"`) && !bare.includes("client="), "the generic manifest carries no connection settings");
@@ -267,10 +291,13 @@ export async function run({ ROOT, check, load, wellFormed }) {
     check(/did not allow/.test(e.message), "setup by someone who is not a site owner is refused by SharePoint");
   }
   const made = await provision(elevatedFor("ana@contoso.com"), { siteUrl: cfg.config.site, grant: { clientId: good.client, appName: "Verlass" } });
-  eq([made.granted, made.created, tenant.grant.roles, tenant.grant.grantedToIdentities[0].application.id], [true, Object.values(LIST_NAMES), ["write"], good.client], "setup grants the add-in write access to the one site and creates three lists");
+  eq([made.granted, made.created, tenant.grant.roles, tenant.grant.grantedToIdentities[0].application.id], [true, Object.values(LIST_NAMES), ["fullcontrol"], good.client], "setup grants the add-in access to the one site and creates three lists");
   eq((await provision(elevatedFor("ana@contoso.com"), { siteUrl: cfg.config.site, grant: null })).created, [], "running setup again creates nothing");
   await provision(elevatedFor("ana@contoso.com"), { siteUrl: cfg.config.site, grant: { clientId: good.client.toUpperCase(), appName: "Verlass" } });
   eq(tenant.grants.length, 1, "pressing the setup button again does not stack up a second grant");
+  tenant.grants[0].roles = ["write"];
+  await provision(elevatedFor("ana@contoso.com"), { siteUrl: cfg.config.site, grant: { clientId: good.client, appName: "Verlass" } });
+  eq([tenant.grants.length, tenant.grants[0].roles], [1, ["fullcontrol"]], "a lower grant from an earlier setup is raised, not duplicated");
   for (const key of Object.keys(LIST_NAMES)) eq(tenant.list(LIST_NAMES[key]).columns.map((c) => c.name), LIST_COLUMNS[key].map((c) => c.name), `the ${key} list has its columns`);
 
   let r = await ana.svc.call("boot");
@@ -324,11 +351,17 @@ export async function run({ ROOT, check, load, wellFormed }) {
   tenant.changeAfterNextRead = true;
   let conflict = "";
   try {
-    await racer.backend.saveTicket(current, { messages: [], activity: [] });
+    await racer.backend.saveTicket(Object.assign({}, current, { updatedAt: "2026-12-01T00:00:00.000Z" }), { messages: [], activity: [{ at: "2026-12-01T00:00:00.000Z", by: "ana@contoso.com", text: "Racing." }] });
   } catch (e) {
     conflict = e.code;
   }
   eq(conflict, "conflict", "a change that lost the race at SharePoint is reported as a conflict");
+
+  // A save whose answer was lost is sent again; it must count as saved, not as someone else's change.
+  const mailBeforeLost = tenant.mail.length;
+  tenant.failAfterWrite = 1;
+  r = await as("ana@contoso.com").svc.call("update", { id: "TKT-0001", changes: { reply: "Saved once." } });
+  check(r.ok && r.changed && JSON.parse(item.fields.Conversation).filter((m) => m.text === "Saved once.").length === 1 && tenant.mail.length > mailBeforeLost, "a save whose answer was lost is recognized as saved, once, and the email still goes out");
 
   // Paging, throttling, and limits.
   for (let i = 0; i < 4; i++) await pat.svc.call("create", { subject: "Extra " + i, description: "x", category: "Something else" });
@@ -345,8 +378,27 @@ export async function run({ ROOT, check, load, wellFormed }) {
   eq((await as("ana@contoso.com").svc.call("boot")).ok, true, "a read that got a 503 is tried again");
 
   // Renaming a status in the settings renames it on the stored tickets.
-  r = await as("ana@contoso.com").svc.call("settingsSave", { lists: { statuses: [{ name: "Open", kind: "open" }, { name: "Working", kind: "open" }, { name: "Waiting on requester", kind: "waiting" }, { name: "Resolved", kind: "done" }, { name: "Closed", kind: "done" }] } });
-  eq([r.ok, r.renamedTickets, item.fields.Status], [true, 1, "Working"], "a renamed status is renamed on the tickets that use it");
+  const renamedStatuses = [{ name: "Open", kind: "open" }, { name: "Working", kind: "open" }, { name: "Waiting on requester", kind: "waiting" }, { name: "Resolved", kind: "done" }, { name: "Closed", kind: "done" }];
+  // First the rename fails part way: then the settings must not be saved, so saving again finishes it.
+  tenant.failTicketPatches = 4;
+  r = await as("ana@contoso.com").svc.call("settingsSave", { lists: { statuses: renamedStatuses } });
+  tenant.failTicketPatches = 0;
+  check(!r.ok && /Save again to finish/.test(r.errors[0]) && (await as("ana@contoso.com").svc.call("settingsGet")).settings.statuses[1].name === "In progress", "when renaming tickets fails, the settings keep the old names");
+  // While the rename runs, a colleague raises the ticket's priority; the rename must not undo it.
+  tenant.beforePatch = (it) => {
+    it.fields.Priority = "Low";
+    it.version++;
+  };
+  r = await as("ana@contoso.com").svc.call("settingsSave", { lists: { statuses: renamedStatuses } });
+  eq([r.ok, r.renamedTickets, item.fields.Status, item.fields.Priority], [true, 1, "Working", "Low"], "a renamed status is renamed on the tickets that use it, without undoing a colleague's change");
+  check(item.fields.ChangedAt > "2026-11-13", "a renamed ticket gets a new change time, so an open form is told to look again");
+  // The web editor says which row became which, so a removed row is never taken for a rename.
+  r = await as("ana@contoso.com").svc.call("settingsSave", { lists: { statuses: [{ name: "Open", kind: "open" }, { name: "Doing", kind: "open" }, { name: "Resolved", kind: "done" }, { name: "Closed", kind: "done" }] }, renames: { statuses: { Working: "Doing" } } });
+  eq([r.ok, r.renamedTickets, item.fields.Status], [true, 1, "Doing"], "a rename named by the editor is applied even when another status was removed in the same save");
+  r = await as("ana@contoso.com").svc.call("settingsSave", { lists: { statuses: renamedStatuses }, renames: {} });
+  eq([r.ok, r.renamedTickets, item.fields.Status], [true, 0, "Doing"], "replacing a list with renames: {} renames nothing");
+  r = await as("ana@contoso.com").svc.call("settingsSave", { lists: { statuses: [{ name: "Open", kind: "open" }, { name: "Working", kind: "open" }, { name: "Waiting on requester", kind: "waiting" }, { name: "Resolved", kind: "done" }, { name: "Closed", kind: "done" }] }, renames: { statuses: {} } });
+  r = await as("ana@contoso.com").svc.call("update", { id: "TKT-0001", changes: { status: "Working" } });
   eq((await as("ana@contoso.com").svc.call("boot")).warnings.filter((w) => /not on the list/.test(w)), [], "so no ticket is left with an unknown status");
 
   // A team member SharePoint does not let into the notes list: the reply is saved, the note is reported.
@@ -359,8 +411,12 @@ export async function run({ ROOT, check, load, wellFormed }) {
   const mailBeforeNote = tenant.mail.length;
   const patAsTeam = as("pat@contoso.com");
   await as("ana@contoso.com").svc.call("settingsSave", { lists: { team: [{ email: "ana@contoso.com", name: "Ana", role: "admin" }, { email: "ben@contoso.com", name: "Ben", role: "agent" }, { email: "pat@contoso.com", name: "Pat", role: "agent" }] } });
+  const ticket2 = tenant.list(LIST_NAMES.tickets).items.find((it) => it.id === 2);
+  const historyBefore = ticket2.fields.History;
   r = await patAsTeam.svc.call("update", { id: "TKT-0002", changes: { reply: "Looking into it.", note: "For the team." } });
-  check(r.ok && r.changed && /cannot open the list Help Desk Notes/.test(r.noteProblem) && tenant.mail.length > mailBeforeNote, "when the note cannot be saved, the reply is still saved, email still goes out, and the problem is named");
+  check(!r.ok && /cannot save internal notes/.test(r.errors[0]) && ticket2.fields.History === historyBefore && tenant.mail.length === mailBeforeNote, "when this person cannot store notes, nothing is saved and the reason is given, so the typed text stays and the log stays true");
+  r = await patAsTeam.svc.call("update", { id: "TKT-0002", changes: { reply: "Looking into it." } });
+  check(r.ok && r.changed && tenant.mail.length > mailBeforeNote, "the same person can still reply");
   await as("ana@contoso.com").svc.call("settingsSave", { lists: { team: [{ email: "ana@contoso.com", name: "Ana", role: "admin" }, { email: "ben@contoso.com", name: "Ben", role: "agent" }] } });
   r = await patAsTeam.svc.call("update", { id: "TKT-0001", changes: { status: "Closed" } });
   eq([r.ok, r.changed], [true, false], "someone just removed from the team loses the team's powers on their next change, not a minute later");

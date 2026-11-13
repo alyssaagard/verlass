@@ -12,6 +12,8 @@
  * SharePoint numbers the items, so the ticket number is the item's own ID and can never repeat.
  * Who may see what is enforced by SharePoint, not by this code. See the install guide for the
  * permissions each list needs.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 import { makeGraph, GraphError } from "./graph.js";
 import { browserLocalParts, browserFormatDate } from "./service.js";
@@ -260,12 +262,24 @@ export function makeSharePointBackend(options) {
       try {
         await graph.patch(items("tickets") + "/" + ticket.number + "/fields", fields, thread.etag ? { headers: { "If-Match": thread.etag } } : undefined);
       } catch (e) {
-        if (e instanceof GraphError && e.status === 412) throw conflict();
-        throw e;
+        if (!(e instanceof GraphError && e.status === 412)) throw e;
+        // A save whose answer was lost and that was sent again comes back as changed by someone
+        // else. If the stored item now holds exactly what was sent, the save went through.
+        const now = await readItem(ticket.number);
+        const f = (now && now.fields) || {};
+        const mine = str(f.Conversation) === fields.Conversation && str(f.History) === fields.History && str(f.ChangedAt) === str(fields.ChangedAt);
+        if (!mine) throw conflict();
       }
       ticketCache = null;
       threads.delete(ticket.number);
     },
+
+    /** False when this person cannot open the notes list, which SharePoint then hides from them. */
+    async canAddNotes() {
+      await resolve();
+      return !!lists.notes;
+    },
+    notesProblem: () => "Your account cannot save internal notes, because it cannot open the list " + names.notes + ". Ask an administrator to make you an Owner of the help desk site, or send the text as a reply instead.",
 
     async addNotes(ticket, notes) {
       await resolve();
@@ -302,14 +316,38 @@ export function makeSharePointBackend(options) {
     },
 
     /** Renames statuses, priorities, categories, and locations on the stored tickets. */
+    /**
+     * Renames statuses, priorities, categories, and locations on the stored tickets. Only the
+     * fields that change are written, each with the item's version, so a colleague's change made
+     * in the meantime is never undone. The change time is updated too, so a form someone has open
+     * on such a ticket is told to look again instead of failing with a puzzling message.
+     */
     async renameTickets(plan) {
+      await resolve();
+      if (!lists.tickets) return 0;
       ticketCache = null;
+      const FIELDS = { status: "Status", priority: "Priority", category: "Category", location: "Location" };
+      const when = new Date().toISOString();
+      const rows = await graph.all(items("tickets") + "?$expand=fields($select=" + LIST_FIELDS + ")&$top=200", null, MAX_PAGES);
       let count = 0;
-      for (const t of await backend.allTickets()) {
-        const next = renameOnTicket(t, plan);
-        if (!next) continue;
-        await graph.patch(items("tickets") + "/" + t.number + "/fields", { Status: next.status, Priority: next.priority, Category: next.category, Location: next.location });
-        count++;
+      for (let row of rows) {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const before = toTicket(row);
+          const next = renameOnTicket(before, plan);
+          if (!next) break;
+          const body = { ChangedAt: when };
+          for (const key of Object.keys(FIELDS)) if (next[key] !== before[key]) body[FIELDS[key]] = next[key];
+          const etag = row["@odata.etag"] || row.eTag || "";
+          try {
+            await graph.patch(items("tickets") + "/" + row.id + "/fields", body, etag ? { headers: { "If-Match": etag } } : undefined);
+            count++;
+            break;
+          } catch (e) {
+            if (!(e instanceof GraphError && e.status === 412) || attempt === 2) throw e;
+            row = await readItem(Number(row.id));
+            if (!row) break;
+          }
+        }
       }
       ticketCache = null;
       threads.clear();
@@ -353,13 +391,23 @@ export async function provision(elevated, options) {
   const site = await elevated.get(sitePath(options.siteUrl) + "?$select=id,webUrl,displayName");
   let granted = false;
   if (options.grant && options.grant.clientId) {
-    // Pressing the button twice must not stack up grants, so look for an existing one first.
+    // The add-in gets "fullcontrol" on this one site. What a person can do through it is always
+    // the smaller of this and their own SharePoint permissions, so requesters stay limited to
+    // their own tickets. A lower role ("write") would also cut off the team: seeing everyone's
+    // items in a list with item-level permissions needs a permission that "write" leaves out.
+    // Pressing the button twice must not stack up grants, so an existing one is reused, and
+    // raised if it is lower.
+    const id = String(options.grant.clientId).toLowerCase();
     const existing = await elevated.all("/sites/" + site.id + "/permissions");
-    const has = existing.some((p) => (p.grantedToIdentitiesV2 || p.grantedToIdentities || []).some((g) => g.application && String(g.application.id).toLowerCase() === String(options.grant.clientId).toLowerCase()));
-    if (!has) await elevated.post("/sites/" + site.id + "/permissions", {
-      roles: ["write"],
-      grantedToIdentities: [{ application: { id: options.grant.clientId, displayName: options.grant.appName || "Help desk add-in" } }],
-    });
+    const mine = existing.find((p) => (p.grantedToIdentitiesV2 || p.grantedToIdentities || []).some((g) => g.application && String(g.application.id).toLowerCase() === id));
+    if (!mine) {
+      await elevated.post("/sites/" + site.id + "/permissions", {
+        roles: ["fullcontrol"],
+        grantedToIdentities: [{ application: { id: options.grant.clientId, displayName: options.grant.appName || "Help desk add-in" } }],
+      });
+    } else if (!(mine.roles || []).includes("fullcontrol")) {
+      await elevated.patch("/sites/" + site.id + "/permissions/" + mine.id, { roles: ["fullcontrol"] });
+    }
     granted = true;
   }
   const found = await elevated.all("/sites/" + site.id + "/lists?$select=id,displayName&$top=200");

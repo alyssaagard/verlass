@@ -4,6 +4,8 @@
  * Standard install: Service.gs is in this same project, and requests go straight to it.
  * Private install: this project has no Service.gs. Requests go to the help desk's web app,
  * whose address is stored in the script property SERVICE_URL.
+ *
+ * Copyright (c) 2026 Alyssa I. Agard. MIT License; see LICENSE.
  */
 
 var Api = (function () {
@@ -65,6 +67,25 @@ function onHomepage(e) {
  */
 function onGmailMessage(e) {
   return onHomepage(e);
+}
+
+/**
+ * True when a time zone name is one the runtime knows. Utilities.formatDate does not reliably
+ * refuse an unknown name (it may quietly use GMT), so the name is checked with Intl, which the
+ * Apps Script V8 runtime provides and which throws for a name it does not know.
+ */
+function addonKnownZone_(tz) {
+  if (!tz) return false;
+  try {
+    if (typeof Intl === "undefined") {
+      Utilities.formatDate(new Date(), tz, "HH");
+      return true;
+    }
+    new Intl.DateTimeFormat("en-US", { timeZone: tz });
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 /** Small helpers shared by every card. */
@@ -149,13 +170,8 @@ var Ui = (function () {
   }
 
   function zone(settings) {
-    var tz = (settings && settings.general && settings.general.timeZone) || Session.getScriptTimeZone();
-    try {
-      Utilities.formatDate(new Date(), tz, "HH");
-      return tz;
-    } catch (e) {
-      return Session.getScriptTimeZone();
-    }
+    var tz = settings && settings.general && settings.general.timeZone;
+    return addonKnownZone_(tz) ? tz : Session.getScriptTimeZone();
   }
 
   /** "Nov 13, 2:05 PM" in the help desk's time zone. */
