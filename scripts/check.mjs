@@ -28,6 +28,9 @@ let failures = 0;
 const fail = (msg) => {
   failures++;
   console.log("  FAIL " + msg);
+  // On GitHub Actions, each failure also becomes an annotation, which anyone can read on the
+  // run's page and through the public checks API, without downloading the log.
+  if (process.env.GITHUB_ACTIONS) console.log("::error title=npm run check::" + String(msg).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A").slice(0, 1500));
 };
 const ok = (msg) => console.log("  ok   " + msg);
 const note = (msg) => console.log("  note " + msg);
