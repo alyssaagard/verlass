@@ -32,10 +32,6 @@ that Sheet. That is fine for one person or a small team that trusts each
 other. For an organization, use the Private install instead
 (${SLUG}-gmail-private.zip), which keeps the Sheet closed.
 
-Version ${VERSION} is new. It has been tested against a simulated Gmail and
-Google Sheets, and has not yet been run in a live Google account. Try it with
-a few people first.
-
 INSTALL
 
   1. Go to script.google.com, select New project, and rename it ${NAME}.
@@ -125,10 +121,6 @@ WHAT IS IN THIS PACKAGE
 In this install the Google Sheet is shared with no one but its owner. The
 add-on proves who each person is with a Google sign-in token, and the service
 answers only for that person. Staff see only their own requests.
-
-Version ${VERSION} is new. It has been tested against a simulated Gmail and
-Google Sheets, and has not yet been run in a live Google account. Try it with
-a few people first.
 
 PART 1: THE SERVICE
 
@@ -231,10 +223,6 @@ ${NAME} for Outlook works in Outlook on the web, the new and classic Outlook
 for Windows, Outlook for Mac, and Outlook for iOS and Android, with Microsoft
 365 work or school accounts. Tickets are items in a SharePoint list in your
 own tenant. ${NAME} has no server and no tracking.
-
-Version ${VERSION} is new. The Outlook add-in has been tested against a
-simulated Microsoft 365, not yet in a live tenant. Try it with a few people
-first.
 
 THE EASY WAY
 

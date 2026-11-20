@@ -297,7 +297,6 @@ export function homePage() {
 
     <h2>Free for everyone</h2>
     <p class="lead">${NAME} is free and open source under the MIT License, for personal, commercial, school, and enterprise use. Read the <a href="${REPO_URL}">source code</a>, change it, and run your own copy if you like.</p>
-    <p class="notice small"><strong>Version ${VERSION} is new.</strong> It has been tested against simulated Gmail, Google Sheets, and Microsoft 365 services and in a real browser, and has not yet been run in a live Google account or a live Microsoft 365 tenant. Try it with a few people first, and please <a href="${REPO_URL}/issues">report what you find</a>.</p>
     <p class="muted small"><em>Verlass</em> is the German word for dependability. "Auf uns ist Verlass" means "you can count on us."</p>`,
   });
 }
@@ -518,7 +517,6 @@ export function installPage() {
     <section class="tab-panel" id="gmail" role="tabpanel">
       <h2 style="margin-top:8px">Gmail</h2>
       <p class="prose">${NAME} for Gmail is a Google Workspace add-on written in Google Apps Script. Tickets and settings are rows in one Google Sheet in your own Drive. It works with Google Workspace accounts and with free Gmail accounts.</p>
-      <p class="notice"><strong>New in version ${VERSION}.</strong> The Gmail add-on has been tested against a simulated Gmail and Google Sheets, and has not yet been run in a live Google account. Try it with a few people first, and please <a href="${REPO_URL}/issues">report what you find</a>.</p>
 
       <h3>Choose an install</h3>
       <div class="table-wrap"><table class="plain">
@@ -620,7 +618,6 @@ export function installPage() {
     <section class="tab-panel" id="outlook" role="tabpanel">
       <h2 style="margin-top:8px">Outlook</h2>
       <p class="prose">${NAME} for Outlook is an Office add-in for Outlook on the web, the new and classic Outlook for Windows, Outlook for Mac, and Outlook for iOS and Android. Tickets are items in a SharePoint list in your own Microsoft 365 tenant, reached through Microsoft Graph as the signed-in person. It needs work or school accounts with Exchange Online mailboxes and SharePoint, which Microsoft 365 Business Basic, Standard, and Premium and the enterprise and education suites include. Personal Outlook.com accounts are not supported, and neither are the separate government and China clouds.</p>
-      <p class="notice"><strong>New in version ${VERSION}.</strong> The Outlook add-in has been tested against a simulated Microsoft 365, not yet in a live tenant. Try it with a few people first, and please <a href="${REPO_URL}/issues">report what you find</a>.</p>
 
       <h3>What an administrator does, once</h3>
       <p class="prose">A <strong>Global Administrator</strong> can do every step. An organization that keeps that role for emergencies can share the work, using the roles Microsoft names for each task: an <strong>Application Administrator</strong> or <strong>Cloud Application Administrator</strong> for registering the app and granting consent, a <strong>SharePoint Administrator</strong> who can also approve the setup permission for creating the lists, and an <strong>Exchange Administrator</strong> for deploying the add-in. Whoever creates the lists must be an Owner of the help desk site.</p>
